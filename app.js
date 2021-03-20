@@ -7,7 +7,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(require('cors')());
 
-app.use("/chatroom", require("./routes/chatroom"));
+//app.use("/chatroom", require("./routes/chatroom"));
 app.use("/user", require("./routes/user"));
 app.use("/privilege", require("./routes/privilege"));
 app.use("/subject", require("./routes/subject"));

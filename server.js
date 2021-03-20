@@ -17,7 +17,7 @@ mongoose.connection.once("open", () => {
 //Bring in the models
 require("./models/Privilege");
 require("./models/User");
-require("./models/Chatroom");
+//require("./models/Chatroom");
 require("./models/Message");
 require("./models/Subject");
 

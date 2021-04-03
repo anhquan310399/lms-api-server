@@ -1,10 +1,15 @@
 const mongoose = require("mongoose");
 const Subject = mongoose.model("Subject");
 const User = mongoose.model("User");
-const _ = require('lodash');
-const isToday = require('../common/isToday.js');
 const { HttpNotFound, HttpBadRequest } = require('../utils/errors');
 const examStatusCodes = require('../constants/examStatusCodes');
+const { filterTimelines,
+    getListAssignmentAndExam,
+    getTimelineExport,
+    getSurveyBankExport,
+    getQuizBankExport,
+    getDeadlineOfSubject } = require('../services/DataMapper');
+const _ = require('lodash');
 
 exports.create = async (req, res) => {
     const data = new Subject({
@@ -33,26 +38,20 @@ exports.create = async (req, res) => {
 };
 
 exports.findAll = async (req, res) => {
-    var idPrivilege = req.idPrivilege;
-    const allSubject = [];
+    const idPrivilege = req.user.idPrivilege;
+    let allSubject = [];
     if (idPrivilege === 'teacher') {
-        allSubject = await Subject.find({ idLecture: req.code, isDeleted: false }, "name");
+        allSubject = await Subject.find({ idLecture: req.user.code, isDeleted: false }, "name");
     } else if (idPrivilege === 'student') {
-        const subjects = await Subject.find({ 'studentIds': req.code, isDeleted: false })
+        const subjects = await Subject.find({ 'studentIds': req.user.code, isDeleted: false })
         allSubject = await Promise.all(subjects.map(async (value) => {
             var teacher = await User.findOne({ code: value.idLecture }, 'code firstName surName urlAvatar')
-                .then(value => {
-                    return value
-                });
             return { _id: value._id, name: value.name, lecture: teacher };
         }));
     } else if (idPrivilege === 'admin') {
         const subjects = await Subject.find({});
         allSubject = await Promise.all(subjects.map(async (value) => {
             var teacher = await User.findOne({ code: value.idLecture }, 'code firstName surName urlAvatar')
-                .then(value => {
-                    return value
-                });
             return { _id: value._id, name: value.name, lecture: teacher };
         }));
     }
@@ -64,7 +63,7 @@ exports.findAll = async (req, res) => {
 };
 
 exports.find = async (req, res) => {
-    let subject = req.subject;
+    const subject = req.subject;
     let timelines = req.subject.timelines;
 
     if (req.user.idPrivilege === 'student') {
@@ -94,7 +93,7 @@ exports.find = async (req, res) => {
 exports.findByAdmin = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
-        throw new HttpNotFound({ message: "Not found subject" });
+        throw new HttpNotFound("Not found subject");
     }
     var teacher = await User.findOne({ code: subject.idLecture },
         'code firstName surName urlAvatar');
@@ -111,9 +110,9 @@ exports.findByAdmin = async (req, res) => {
 }
 
 exports.update = async (req, res) => {
-    let subject = await Subject.findById(req.params.idSubject);
+    const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
-        throw new HttpNotFound({ message: "Not found subject" });
+        throw new HttpNotFound("Not found subject");
     }
 
     subject.name = req.body.name || subject.name;
@@ -138,7 +137,7 @@ exports.importSubject = async (req, res) => {
         if (subject.timelines.length === 0) {
             subject.timelines = req.body.timelines;
         } else {
-            throw new HttpBadRequest({ message: 'Đã có dữ liệu các tuần không thể import!' });
+            throw new HttpBadRequest('Đã có dữ liệu các tuần không thể import!');
         }
     }
     if (req.body.studentIds) {
@@ -182,7 +181,7 @@ exports.importSubject = async (req, res) => {
 exports.delete = async (req, res) => {
     const data = await Subject.findByIdAndDelete(req.params.idSubject)
     if (!data) {
-        throw new HttpNotFound({ message: "Not found subject" });
+        throw new HttpNotFound("Not found subject");
     }
     res.json({
         success: true,
@@ -194,7 +193,7 @@ exports.delete = async (req, res) => {
 exports.hideOrUnhide = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject)
     if (!subject) {
-        throw new HttpNotFound({ message: "Not found subject" });
+        throw new HttpNotFound("Not found subject");
     }
     subject.isDeleted = !subject.isDeleted;
     await subject.save()
@@ -213,7 +212,7 @@ exports.hideOrUnhide = async (req, res) => {
 exports.addListStudents = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
-        throw new HttpNotFound({ message: "Not found subject" });
+        throw new HttpNotFound("Not found subject");
     }
     var list = subject.studentIds.concat(req.body).sort();
     list = list.filter((a, b) => list.indexOf(a) === b);
@@ -231,13 +230,13 @@ exports.addStudent = async (req, res) => {
 
     let idStudent = subject.studentIds.find(value => { return value === req.body.idStudent });
     if (idStudent) {
-        throw new HttpBadRequest({ message: 'This student has already in subject' });
+        throw new HttpBadRequest('This student has already in subject');
     }
 
     const user = await User.findOne({ code: req.body.idStudent, idPrivilege: 'student' },
         'code firstName surName urlAvatar');
     if (!user) {
-        throw new HttpNotFound({ message: `Not found student with id: ${req.body.idStudent}` });
+        throw new HttpNotFound(`Not found student with id: ${req.body.idStudent}`);
     }
     subject.studentIds.push(req.body.idStudent);
     await subject.save()
@@ -260,7 +259,7 @@ exports.removeStudent = async (req, res) => {
 
     let index = subject.studentIds.indexOf(req.body.idStudent);
     if (index === -1) {
-        throw new HttpNotFound({ message: `Not found this student with id: ${req.body.idStudent}` });
+        throw new HttpNotFound(`Not found this student with id: ${req.body.idStudent}`);
     }
     subject.studentIds.splice(index, 1);
     await subject.save();
@@ -505,7 +504,7 @@ exports.updateRatioTranscript = async (req, res) => {
 exports.exportSubject = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject)
     if (!subject) {
-        throw new HttpNotFound({ message: "Not found subject" });
+        throw new HttpNotFound("Not found subject");
     }
     const timelines = await getTimelineExport(subject.timelines);
 
@@ -527,7 +526,7 @@ exports.exportSubject = async (req, res) => {
 exports.exportSubjectWithCondition = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
-        throw new HttpNotFound({ message: "Not found subject" });
+        throw new HttpNotFound("Not found subject");
     }
     let data = {};
 
@@ -560,11 +559,10 @@ exports.exportSubjectWithCondition = async (req, res) => {
 }
 
 exports.getDeadline = async (req, res) => {
-    const listSubject = await Subject.find({ 'studentIds': req.code, isDeleted: false });
+    const listSubject = await Subject.find({ 'studentIds': req.student.code, isDeleted: false });
     let deadline = [];
-    const today = new Date();
     listSubject.forEach(subject => {
-        deadline = deadline.concat(getDeadlineOfSubject(subject));
+        deadline = deadline.concat(getDeadlineOfSubject(subject, req.student));
     });
 
     res.json({
@@ -574,365 +572,10 @@ exports.getDeadline = async (req, res) => {
 }
 
 exports.getDeadlineBySubject = async (req, res) => {
-    const today = new Date();
-    let subject = req.subject;
-
-    let deadline = getDeadlineOfSubject(subject);
+    let deadline = getDeadlineOfSubject(req.subject, req.student);
 
     res.json({
         success: true,
         deadline: _.sortBy(deadline, ['expireTime'])
     });
-}
-
-//Function
-const getListAssignmentAndExam = async (subject, today) => {
-    let assignmentOrExam = await subject.timelines.reduce(
-        async (preField, currentTimeline) => {
-            if (currentTimeline.isDeleted) {
-                let result = await preField;
-                return result;
-            } else {
-                let exams = await Promise.all(currentTimeline.exams.map(async (exam) => {
-                    if (exam.isDeleted) {
-                        return null;
-                    }
-                    let exists = [];
-                    let submissions = await exam.submissions.reduce(function (prePromise, submission) {
-                        let exist = exists.find(value => value.idStudent == submission.idStudent);
-                        if (exist) {
-                            let existSubmission = prePromise[exist.index];
-                            prePromise[exist.index].grade = existSubmission.grade >= submission.grade ? existSubmission.grade : submission.grade;
-                            return prePromise;
-                        } else {
-                            exists = exists.concat({
-                                idStudent: submission.idStudent,
-                                grade: submission.grade,
-                                index: prePromise.length
-                            })
-                            return prePromise.concat({
-                                // _id: submission._id,
-                                idStudent: submission.idStudent,
-                                grade: submission.grade
-                            })
-                        }
-                    }, []);
-                    let isRemain = today <= exam.expireTime;
-                    return {
-                        // idSubject: subject._id,
-                        // idTimeline: currentTimeline._id,
-                        _id: exam._id,
-                        name: exam.name,
-                        isRemain: isRemain,
-                        submissions: submissions,
-                        type: 'exam',
-                    }
-                }));
-                let assignments = await Promise.all(currentTimeline.assignments.map(async (assignment) => {
-                    if (assignment.isDeleted) {
-                        return null;
-                    }
-
-                    let submissions = await Promise.all(assignment.submissions.map(async (submission) => {
-                        return {
-                            // _id: submission._id,
-                            idStudent: submission.idStudent,
-                            grade: submission.feedBack ? submission.feedBack.grade : 0,
-                            isGrade: submission.feedBack ? true : false,
-                        }
-                    }));
-
-                    let isRemain = today <= assignment.setting.expireTime;
-
-                    return {
-                        // idSubject: subject._id,
-                        // idTimeline: currentTimeline._id,
-                        _id: assignment._id,
-                        name: assignment.name,
-                        isRemain: isRemain,
-                        submissions: submissions,
-                        type: 'assignment'
-                    }
-                }));
-                let currentFields = exams.concat(assignments);
-                let result = await preField;
-                return result.concat(currentFields);
-            }
-        }, []);
-    assignmentOrExam = await (assignmentOrExam.filter((value) => {
-        return (value !== null);
-    }));
-
-    return assignmentOrExam;
-}
-
-const getTimelineExport = async (timelines) => {
-    const result = await Promise.all(timelines.map(async (timeline) => {
-        let surveys = await Promise.all(timeline.surveys.map(async (survey) => {
-            return {
-                name: survey.name,
-                description: survey.description,
-                code: survey.code,
-                expireTime: survey.expireTime
-            }
-        }));
-        let forums = timeline.forums.map(forum => {
-            return {
-                name: forum.name,
-                description: forum.description
-            }
-        });
-        let exams = timeline.exams.map(exam => {
-            return {
-                name: exam.name,
-                content: exam.content,
-                startTime: exam.startTime,
-                expireTime: exam.expireTime,
-                setting: exam.setting
-            }
-        });
-        let information = timeline.information.map(info => {
-            return {
-                name: info.name,
-                content: info.content
-            }
-        });
-        let assignments = timeline.assignments.map(assignment => {
-            return {
-                name: assignment.name,
-                content: assignment.content,
-                attachments: assignment.attachments,
-                setting: assignment.setting
-            }
-        });
-        return {
-            name: timeline.name,
-            description: timeline.description,
-            surveys: surveys,
-            forums: forums,
-            exams: exams,
-            information: information,
-            assignments: assignments,
-            files: timeline.files,
-            index: timeline.index
-        }
-    }));
-    return _.sortBy(result, ['index']);
-}
-
-const getSurveyBankExport = async (surveyBank) => {
-    return await Promise.all(surveyBank.map(async (questionnaire) => {
-        const questions = questionnaire.questions.map(question => {
-            if (question.typeQuestion === 'choice' || question.typeQuestion === 'multiple') {
-                const answers = question.answer.map(answer => {
-                    return answer.content;
-                });
-                return {
-                    question: question.question,
-                    answer: answers,
-                    typeQuestion: question.typeQuestion
-                }
-            } else {
-                return {
-                    question: question.question,
-                    typeQuestion: question.typeQuestion
-                }
-            }
-        });
-        return {
-            _id: questionnaire._id,
-            name: questionnaire.name,
-            questions: questions
-        }
-    }))
-}
-
-const getQuizBankExport = async (quizBank) => {
-    return await Promise.all(quizBank.map(async (questionnaire) => {
-        const questions = questionnaire.questions.map((question) => {
-            const answers = question.answers.map(option => {
-                return {
-                    answer: option.answer,
-                    isCorrect: option.isCorrect
-                }
-            });
-            return {
-                question: question.question,
-                answers: answers,
-                typeQuestion: question.typeQuestion,
-                explain: question.explain
-            }
-        });
-        return {
-            _id: questionnaire._id,
-            name: questionnaire.name,
-            questions: questions
-        }
-    }))
-}
-
-const filterTimelines = async (timelines, isStudent) => {
-    const res = _.sortBy(await Promise.all(timelines.map(async (value) => {
-        let forums = value.forums.reduce((preForums, currentForum) => {
-            if (isStudent && currentForum.isDeleted) {
-                return preForums;
-            }
-            let forum = {
-                _id: currentForum.id,
-                name: currentForum.name,
-                description: currentForum.description,
-                time: currentForum.createdAt,
-                isNew: isToday(currentForum.updatedAt),
-                isDeleted: isStudent ? null : currentForum.isDeleted
-            }
-            return (preForums.concat(forum));
-        }, []);
-        let exams = value.exams.reduce((preExams, currentExam) => {
-            if (isStudent && currentExam.isDeleted) {
-                return preExams;
-            }
-
-            let exam = {
-                _id: currentExam._id,
-                name: currentExam.name,
-                description: currentExam.description,
-                time: currentExam.createdAt,
-                isNew: isToday(currentExam.createdAt),
-                isDeleted: isStudent ? null : currentExam.isDeleted
-            }
-            return (preExams.concat(exam));
-        }, []);
-        let information = value.information.map((info) => {
-            return {
-                _id: info._id,
-                name: info.name,
-                content: info.content,
-                time: info.createdAt,
-                isNew: isToday(info.updatedAt)
-            }
-        });
-        let assignments = value.assignments.reduce((preAssignments, currentAssignment) => {
-            if (isStudent && currentAssignment.isDeleted) {
-                return preAssignments;
-            }
-
-            let assignment = {
-                _id: currentAssignment._id,
-                name: currentAssignment.name,
-                description: currentAssignment.description,
-                time: currentAssignment.createdAt,
-                isNew: isToday(currentAssignment.createdAt),
-                isDeleted: isStudent ? null : currentAssignment.isDeleted
-            }
-            return (preAssignments.concat(assignment));
-        }, []);
-        let surveys = value.surveys.reduce((preSurveys, currentSurvey) => {
-            if (isStudent && currentSurvey.isDeleted) {
-                return preSurveys;
-            }
-
-            let survey = {
-                _id: currentSurvey._id,
-                name: currentSurvey.name,
-                description: currentSurvey.description,
-                time: currentSurvey.createdAt,
-                isNew: isToday(currentSurvey.createdAt),
-                isDeleted: isStudent ? null : currentSurvey.isDeleted
-            }
-            return (preSurveys.concat(survey));
-        }, []);
-
-        let files = value.files.reduce((preFiles, currentFile) => {
-            if (isStudent && currentFile.isDeleted) {
-                return preFiles;
-            }
-
-            let file = {
-                _id: currentFile._id,
-                name: currentFile.name,
-                path: currentFile.path,
-                type: currentFile.type,
-                uploadDay: currentFile.uploadDay,
-                isNew: isToday(currentFile.uploadDay),
-                isDeleted: isStudent ? null : currentFile.isDeleted
-            }
-            return (preFiles.concat(file));
-        }, []);
-
-        return {
-            _id: value._id,
-            name: value.name,
-            description: value.description,
-            surveys: surveys,
-            forums: forums,
-            exams: exams,
-            information: information,
-            assignments: assignments,
-            files: files,
-            index: value.index,
-            isDeleted: isStudent ? null : value.isDeleted
-        };
-    })), ['index']);
-
-    return res;
-}
-
-const getDeadlineOfSubject = (subject) => {
-    let deadline = [];
-    subject.timelines.forEach((timeline) => {
-        if (!timeline.isDeleted) {
-            let exams = timeline.exams.reduce((preExams, currentExam) => {
-                if (currentExam.expireTime.getTime() < today || currentExam.isDeleted) {
-                    return preExams;
-                }
-                var submission = currentExam.submissions.find(value => value.idStudent == req.idStudent)
-                let exam = {
-                    idTimeline: timeline._id,
-                    _id: currentExam._id,
-                    name: currentExam.name,
-                    expireTime: currentExam.expireTime,
-                    timeRemain: (new Date(currentExam.expireTime - today)).getTime(),
-                    isSubmit: submission ? true : false,
-                    type: 'exam'
-                }
-                return (preExams.concat(exam));
-            }, []);
-            let assignments = timeline.assignments.reduce((preAssignments, currentAssignment) => {
-                if (currentAssignment.setting.expireTime.getTime() < today || currentAssignment.isDeleted) {
-                    return preAssignments;
-                }
-                let submission = currentAssignment.submissions.find(value => value.idStudent == req.idStudent);
-                let assignment = {
-                    idTimeline: timeline._id,
-                    _id: currentAssignment._id,
-                    name: currentAssignment.name,
-                    expireTime: currentAssignment.setting.expireTime,
-                    timeRemain: (new Date(currentAssignment.setting.expireTime - today)).getTime(),
-                    isSubmit: submission ? true : false,
-                    type: 'assignment'
-                }
-                return (preAssignments.concat(assignment));
-            }, []);
-
-            let surveys = timeline.surveys.reduce((preSurveys, currentSurvey) => {
-                if (currentSurvey.expireTime.getTime() < today || currentSurvey.isDeleted) {
-                    return preSurveys;
-                }
-                let reply = currentSurvey.responses.find(value => value.idStudent == req.idStudent);
-                let survey = {
-                    idTimeline: timeline._id,
-                    _id: currentSurvey._id,
-                    name: currentSurvey.name,
-                    expireTime: currentSurvey.expireTime,
-                    timeRemain: (new Date(currentSurvey.expireTime - today)).getTime(),
-                    isSubmit: reply ? true : false,
-                    type: 'survey'
-                }
-                return (preSurveys.concat(survey));
-            }, []);
-
-            deadline = deadline.concat(exams, assignments, surveys);
-        }
-    });
-    return deadline;
 }

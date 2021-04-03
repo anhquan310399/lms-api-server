@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const Privilege = mongoose.model("Privilege");
+const { HttpNotFound } = require('../utils/errors');
 
 exports.create = async (req, res) => {
     const privilege = new Privilege({
@@ -21,9 +22,7 @@ exports.findAll = async (req, res) => {
 exports.findByRole = async (req, res) => {
     const privilege = await Privilege.findOne({ role: req.params.role });
     if (!privilege) {
-        return res.status(404).json({
-            message: `Not found privilege with role ${req.params.role}`,
-        });
+        throw new HttpNotFound(`Not found privilege with role ${req.params.role}`);
     }
     else {
         res.json(privilege);

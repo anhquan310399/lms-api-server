@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const topicSchema = require("./Topic")
 
 const forum = new mongoose.Schema({
-    title: {
+    name: {
         type: String,
         required: [true, 'Title of forum is required']
     },

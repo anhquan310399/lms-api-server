@@ -19,6 +19,7 @@ exports.authStudent = (req, res, next) => {
         if (subject) {
           req.subject = subject;
           req.student = user;
+          req.idPrivilege = user.idPrivilege;
           next();
         } else {
           next(new HttpNotFound({ message: "Not found subject that you enroll" }));
@@ -50,6 +51,7 @@ exports.authLecture = (req, res, next) => {
         if (subject) {
           req.subject = subject;
           req.lecture = user;
+          req.idPrivilege = user.idPrivilege;
           next();
         } else {
           next(new HttpNotFound({ message: "Not found this subject" }));
@@ -78,21 +80,22 @@ exports.authInSubject = (req, res, next) => {
         const idSubject = req.params.idSubject || req.query.idSubject || req.body.idSubject;
 
         let subject = null;
-        if (user.idPrivilege == "student") {
+        if (user.idPrivilege === "student") {
           subject = await Subject.findOne({ _id: idSubject, isDeleted: false, 'studentIds': user.code })
-        } else if (user.idPrivilege == "teacher") {
+        } else if (user.idPrivilege === "teacher") {
           subject = await Subject.findOne({ _id: idSubject, isDeleted: false, idLecture: user.code })
         }
         if (subject) {
           req.user = user;
           req.subject = subject;
+          req.idPrivilege = user.idPrivilege;
           next();
         } else {
           next(new HttpNotFound({ message: "Not found this subject" }));
         }
       })
       .catch((err) => {
-        console.log("authInSubject - Find user", error);
+        console.log("authInSubject - Find user", err);
         next(err);
       });
   } catch (error) {

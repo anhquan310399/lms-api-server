@@ -1,10 +1,10 @@
-var router = require('express').Router();
+const router = require('express').Router();
 const { authLogin, authInSubject, authLecture, authAdmin, authStudent } = require("../middlewares/auth")
 const subjectController = require("../controllers/subjectController")
 const { catchErrors } = require("../handlers/errorHandlers");
 
 router.get('/', authLogin, catchErrors(subjectController.findAll));
-router.get('/deadline', authLogin, catchErrors(subjectController.getDeadline));
+router.get('/deadline', authStudent, catchErrors(subjectController.getDeadline));
 router.get('/:idSubject/deadline', authStudent, catchErrors(subjectController.getDeadlineBySubject));
 router.get('/:idSubject', authInSubject, catchErrors(subjectController.find));
 router.get('/:idSubject/detail', authAdmin, catchErrors(subjectController.findByAdmin));

@@ -7,10 +7,15 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(require('cors')());
 
-//app.use("/chatroom", require("./routes/chatroom"));
+app.use("/chatroom", require("./routes/chatroom"));
 app.use("/user", require("./routes/user"));
 app.use("/privilege", require("./routes/privilege"));
 app.use("/subject", require("./routes/subject"));
+app.use("/timeline", require("./routes/timeline"));
+app.use("/announcement", require("./routes/announcement"));
+app.use("/assignment", require("./routes/assignment"));
+app.use("/forum", require("./routes/forum"));
+app.use("/topic", require("./routes/topic"));
 
 //Setup Error Handlers
 const errorHandlers = require("./handlers/errorHandlers");

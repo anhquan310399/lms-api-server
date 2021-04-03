@@ -18,7 +18,10 @@ const feedBack = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    comments: [comment]
+    comments: {
+        type: [comment],
+        default: []
+    }
 }, { _id: false });
 
 const submission = new mongoose.Schema({

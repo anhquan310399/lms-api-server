@@ -47,16 +47,11 @@ exports.find = async (req, res) => {
 exports.update = async (req, res) => {
     const subject = req.subject;
     const { topic } = findTopic(subject, req);
-    let isCreator = false;
-    if (topic.idUser == req.user._id) {
-        topic.name = req.body.data.name;
-        topic.content = req.body.data.content;
-        isCreator = true;
-    }
-
-    if (!isCreator) {
+    if (topic.idUser.toString() != req.user._id.toString()) {
         throw new HttpUnauthorized("You isn't the topic creator. You can't change this topic!");
     }
+    topic.name = req.body.data.name;
+    topic.content = req.body.data.content;
     await subject.save()
     res.json({
         success: true,
@@ -69,7 +64,7 @@ exports.delete = async (req, res) => {
     const subject = req.subject
     const { forum, topic } = findTopic(subject, req);
 
-    if (topic.idUser != req.user._id) {
+    if (topic.idUser.toString() != req.user._id.toString()) {
         throw new HttpUnauthorized("You isn't the topic creator. You can't delete this topic!");
     }
 
@@ -82,5 +77,64 @@ exports.delete = async (req, res) => {
     res.json({
         success: false,
         message: "Delete topic successfully!"
+    });
+};
+
+exports.discuss = async (req, res) => {
+    const subject = req.subject;
+    const { topic } = findTopic(subject, req);
+
+    const model = {
+        content: req.body.data.content,
+        idUser: req.user._id
+    };
+
+    const length = topic.discussions.push(model);
+
+    await subject.save();
+
+    res.json({
+        success: true,
+        discussion: await getDetailComment(topic.discussions[length - 1])
+    });
+};
+
+exports.updateDiscussion = async (req, res) => {
+    const subject = req.subject
+    const { topic } = findTopic(subject, req);
+    const discussion = topic.discussions.find(value => value._id == req.params.idDiscussion);
+    if (!discussion) {
+        throw new HttpNotFound("Not found discussion");
+    }
+    if (discussion.idUser.toString() != req.user._id.toString()) {
+        throw new HttpUnauthorized("You isn't the discussion creator. You can't change this discussion!");
+    }
+    discussion.content = req.body.data.content;
+    await subject.save();
+    res.send(
+        {
+            success: true,
+            message: "Update discussion successfully!",
+            discussion: await getDetailComment(discussion)
+        }
+    );
+};
+
+exports.deleteDiscussion = async (req, res) => {
+    const subject = req.subject;
+    const { topic } = findTopic(subject, req);
+    const discussion = topic.discussions.find(value => value._id == req.params.idDiscussion);
+    if (!discussion) {
+        throw new HttpNotFound("Not found discussion");
+    }
+    if (discussion.idUser.toString() != req.user._id.toString()) {
+        throw new HttpUnauthorized("You isn't the discussion creator. You can't delete this discussion!");
+    }
+    const index = topic.discussions.indexOf(discussion);
+    topic.discussions.splice(index, 1);
+    await subject.save()
+    res.send({
+        success: true,
+        message: "Delete Discussion Successfully!"
     });
 };

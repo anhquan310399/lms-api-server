@@ -8,6 +8,7 @@ const findTimeline = (subject, req) => {
     }
     return timeline;
 }
+
 const findForum = (subject, req) => {
     const timeline = findTimeline(subject, req);
     const id = req.query.idForum || req.params.idForum || req.body.idForum
@@ -17,6 +18,7 @@ const findForum = (subject, req) => {
     }
     return { timeline, forum }
 }
+
 const findTopic = (subject, req) => {
     const { timeline, forum } = findForum(subject, req);
     const id = req.query.idTopic || req.params.idTopic || req.body.idTopic
@@ -30,7 +32,7 @@ const findTopic = (subject, req) => {
 const findAssignment = (subject, req) => {
     const timeline = findTimeline(subject, req);
     const id = req.query.idAssignment || req.params.idAssignment || req.body.idAssignment
-    const assignment = await timeline.assignments.find(value => value._id == id);
+    const assignment = timeline.assignments.find(value => value._id == id);
     if (!assignment || (req.idPrivilege === 'student' && assignment.isDeleted === true)) {
         throw new HttpNotFound("Not found assignment");
     }

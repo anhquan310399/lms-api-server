@@ -349,7 +349,7 @@ const getCommonInfoTopic = async (topic) => {
 const getDetailComment = async (comment) => {
     let creator = await User.findById(comment.idUser, 'code firstName surName urlAvatar')
     return {
-        id: comment._id,
+        _id: comment._id,
         content: comment.content,
         create: creator,
         time: comment.updatedAt,

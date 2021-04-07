@@ -357,6 +357,14 @@ const getDetailComment = async (comment) => {
     }
 }
 
+const getInfoQuestionBank = (bank)=>{
+    return {
+        _id: bank._id,
+        name: bank.name,
+        questionCount: bank.questions.length
+    }
+}
+
 module.exports = {
     getCommonData,
     getDetailTimeline,
@@ -367,5 +375,6 @@ module.exports = {
     getQuizBankExport,
     getDeadlineOfSubject,
     getCommonInfoTopic,
-    getDetailComment
+    getDetailComment,
+    getInfoQuestionBank
 }

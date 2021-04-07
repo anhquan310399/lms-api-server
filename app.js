@@ -16,6 +16,8 @@ app.use("/announcement", require("./routes/announcement"));
 app.use("/assignment", require("./routes/assignment"));
 app.use("/forum", require("./routes/forum"));
 app.use("/topic", require("./routes/topic"));
+app.use("/quiz", require("./routes/quizBank"));
+app.use("/survey", require("./routes/surveyBank"));
 
 //Setup Error Handlers
 const errorHandlers = require("./handlers/errorHandlers");

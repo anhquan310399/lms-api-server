@@ -11,7 +11,7 @@ const questionOption = new mongoose.Schema({
     }
 })
 
-const questionSchema = new mongoose.Schema({
+const question = new mongoose.Schema({
     question: {
         type: String,
         required: [true, 'Content of question is required']
@@ -28,12 +28,15 @@ const questionSchema = new mongoose.Schema({
     explain: String
 })
 
-const quizQuestionnaire = new mongoose.Schema({
+const quizBank = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Name of chapter is required']
+        required: [true, 'Name of questionnaire is required']
     },
-    questions: [questionSchema]
+    questions:{
+        type: [question],
+        required: [true, 'Question of questionnaire is required']
+    }
 });
 
-module.exports = quizQuestionnaire;
+module.exports = quizBank;

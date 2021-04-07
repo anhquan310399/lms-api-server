@@ -20,23 +20,21 @@ const question = new mongoose.Schema({
     }
 });
 
-const questionnaire = new mongoose.Schema({
+const surveyBank = new mongoose.Schema({
     name: {
         type: String,
         require: [true, 'Name of questionnaire is required']
     },
     questions: {
         type: [question],
-        required: [true, 'Question of Questionnaire is required']
+        required: [true, 'Question of questionnaire is required']
     }
 });
 
-questionnaire.pre('save', async function(next) {
-    let currentQuestionnaire = this;
-    // If you call `next()` with an argument, that argument is assumed to be
-    // an error.
-    if (currentQuestionnaire.isNew || currentQuestionnaire.isModified('questions')) {
-        let questions = currentQuestionnaire.questions;
+surveyBank.pre('save', async function(next) {
+    let curBank = this;
+    if (curBank.isNew || curBank.isModified('questions')) {
+        let questions = curBank.questions;
         questions = await Promise.all(questions.map(async(question) => {
             if (question.typeQuestion === 'choice' || question.typeQuestion === 'multiple') {
                 let answer = await question.answer.map(value => {
@@ -59,10 +57,10 @@ questionnaire.pre('save', async function(next) {
                 }
             }
         }));
-        currentQuestionnaire.questions = questions;
+        curBank.questions = questions;
     }
     next();
 });
 
 
-module.exports = questionnaire;
+module.exports = surveyBank;

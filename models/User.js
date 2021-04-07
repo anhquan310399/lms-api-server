@@ -3,7 +3,7 @@ const validator = require("validator");
 const jwt = require('jsonwebtoken');
 const Privileges = mongoose.model('Privilege');
 const bcrypt = require('bcrypt');
-var ValidatorError = mongoose.Error.ValidatorError;
+const ValidatorError = mongoose.Error.ValidatorError;
 
 const UserSchema = mongoose.Schema({
     code: {
@@ -113,5 +113,6 @@ UserSchema.methods.generateAuthToken = function () {
     });
     return token
 }
+
 
 module.exports = mongoose.model("User", UserSchema);

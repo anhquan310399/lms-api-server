@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
 const Privilege = mongoose.model("Privilege");
 const { HttpNotFound } = require('../utils/errors');
-
 exports.create = async (req, res) => {
     const privilege = new Privilege({
         role: req.body.role,
@@ -15,7 +14,6 @@ exports.create = async (req, res) => {
 
 exports.findAll = async (req, res) => {
     const privileges = await Privilege.find();
-
     res.json(privileges);
 };
 
@@ -45,6 +43,6 @@ exports.update = async (req, res) => {
 exports.delete = async (req, res) => {
     await Privilege.findByIdAndRemove(req.params.id);
     res.json({
-        message:'Delete role successfully!'
+        message: 'Delete role successfully!'
     })
 };

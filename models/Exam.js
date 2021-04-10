@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const studentAnswerSheetSchema = require("./studentAnswerSheet");
+const AnswerSheet = require("./AnswerSheet");
 var ValidatorError = mongoose.Error.ValidatorError;
 
 const setting = new mongoose.Schema({
@@ -46,7 +46,7 @@ const exam = new mongoose.Schema({
         type: String,
         required: [true, "Requirement of exam is required"]
     },
-    submissions: [studentAnswerSheetSchema],
+    submissions: [AnswerSheet],
     setting: {
         type: setting,
         required: [true, "Setting of exam is required"]
@@ -58,11 +58,11 @@ const exam = new mongoose.Schema({
 }, { timestamps: true });
 
 exam.pre('save', async function (next) {
-    let currentExam = this;
-    let timeline = currentExam.parent();
-    let subject = timeline.parent();
+    const currentExam = this;
+    const timeline = currentExam.parent();
+    const subject = timeline.parent();
 
-    let questionnaire = subject.quizBank.find(value => value._id == currentExam.setting.code);
+    const questionnaire = subject.quizBank.find(value => value._id.equals(currentExam.setting.code));
 
     if (!questionnaire) {
         const err = new ValidatorError({ message: `Can't not found questionnaire for ${currentExam.name} in database!. Please import quizBank has questionnaire with _id: ${currentExam.setting.code} before` });

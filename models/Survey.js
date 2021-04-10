@@ -52,13 +52,13 @@ const survey = new mongoose.Schema({
 
 }, { timestamps: true });
 
-//Validate input
-response.pre('save', async function (next) {
-    let currentRely = this;
-    let survey = currentRely.parent();
-    let answerSheet = currentRely.answerSheet;
-    let questionnaire = survey.parent().parent().surveyBank.find(value => {
-        return value._id == survey.code;
+
+response.pre('save', async function(next) {
+    const currentRely = this;
+    const survey = currentRely.parent();
+    const answerSheet = currentRely.answerSheet;
+    const questionnaire = survey.parent().parent().surveyBank.find(value => {
+        return value._id.equals(survey.code);
     }).questions;
     console.log(questionnaire);
     if (answerSheet.length !== questionnaire.length) {
@@ -68,7 +68,7 @@ response.pre('save', async function (next) {
         return next(err);
     }
     answerSheet.forEach(answerSheet => {
-        let question = questionnaire.find(value => value._id == answerSheet.idQuestion);
+        let question = questionnaire.find(value => value._id.equals(answerSheet.idQuestion));
         if (!question) {
             let err = new ValidatorError({
                 message: `Can not found question ${answerSheet.idQuestion} in questionnaire`
@@ -76,7 +76,7 @@ response.pre('save', async function (next) {
             return next(err);
         }
         if (question.typeQuestion === 'choice') {
-            let answer = question.answer.find(value => value._id == answerSheet.answer);
+            let answer = question.answer.find(value => value._id.equals(answerSheet.answer));
             if (!answer) {
                 let err = new ValidatorError({
                     message: `Can not found answer ${answerSheet.answer} in question ${question.question}`
@@ -85,7 +85,7 @@ response.pre('save', async function (next) {
             }
         } else if (question.typeQuestion === 'multiple') {
             answerSheet.answer.forEach(currentAnswer => {
-                let answer = question.answer.find(value => value._id == currentAnswer);
+                let answer = question.answer.find(value => value._id.equals(currentAnswer));
                 if (!answer) {
                     let err = new ValidatorError({
                         message: `Can not found answer ${currentAnswer} in question ${question.question}`
@@ -100,13 +100,12 @@ response.pre('save', async function (next) {
     next();
 });
 
-survey.pre('save', async function (next) {
-    let currentSurvey = this;
-    let timeline = currentSurvey.parent();
-    let subject = timeline.parent();
+survey.pre('save', async function(next) {
+    const currentSurvey = this;
+    const timeline = currentSurvey.parent();
+    const subject = timeline.parent();
 
-    let questionnaire = subject.surveyBank.find(value => value._id == currentSurvey.code);
-    console.log(questionnaire);
+    const questionnaire = subject.surveyBank.find(value => value._id.equals(currentSurvey.code));
 
     if (!questionnaire) {
         const err = new ValidatorError({ message: `Can't not found questionnaire for ${currentSurvey.name} in database!. Please import surveyBank has questionnaire with _id: ${currentSurvey.code} before` });

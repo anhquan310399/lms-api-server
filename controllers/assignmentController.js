@@ -4,7 +4,10 @@ const moment = require('moment');
 const { HttpNotFound, HttpUnauthorized } = require('../utils/errors');
 const { getCommonData } = require('../services/DataMapper');
 const { findTimeline, findAssignment } = require('../services/DataSearcher');
-exports.create = async (req, res) => {
+const { sendMail } = require('../services/SendMail');
+const { MailOptions } = require('../utils/mailOptions');
+
+exports.create = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const data = req.body.data;
@@ -30,7 +33,7 @@ exports.create = async (req, res) => {
     });
 };
 
-exports.find = async (req, res) => {
+exports.find = async(req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
     let today = new Date();
@@ -71,7 +74,7 @@ exports.find = async (req, res) => {
         })
     } else {
         let submissions = await Promise.all(assignment.submissions
-            .map(async function (submit) {
+            .map(async function(submit) {
                 var student = await User.findById(submit.idStudent, 'code firstName surName urlAvatar')
                     .then(value => {
                         return value
@@ -101,7 +104,7 @@ exports.find = async (req, res) => {
     }
 };
 
-exports.findUpdate = async (req, res) => {
+exports.findUpdate = async(req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
 
@@ -119,10 +122,10 @@ exports.findUpdate = async (req, res) => {
 
 };
 
-exports.findAll = async (req, res) => {
+exports.findAll = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
-    const assignments = await Promise.all(timeline.assignments.map(async (value) => {
+    const assignments = await Promise.all(timeline.assignments.map(async(value) => {
         return {
             _id: value._id,
             name: value.name,
@@ -137,7 +140,7 @@ exports.findAll = async (req, res) => {
     })
 };
 
-exports.update = async (req, res) => {
+exports.update = async(req, res) => {
     const data = req.body.data;
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
@@ -171,7 +174,7 @@ exports.update = async (req, res) => {
     });
 };
 
-exports.delete = async (req, res) => {
+exports.delete = async(req, res) => {
     const subject = req.subject;
     const { timeline, assignment } = findAssignment(subject, req);
     const indexAssignment = timeline.assignments.indexOf(assignment);
@@ -184,18 +187,13 @@ exports.delete = async (req, res) => {
     });
 };
 
-exports.hideOrUnhide = async (req, res) => {
+exports.hideOrUnhide = async(req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
     assignment.isDeleted = !assignment.isDeleted;
 
     await subject.save();
-    let message;
-    if (assignment.isDeleted) {
-        message = `Hide assignment ${assignment.name} successfully!`
-    } else {
-        message = `Unhide assignment  ${assignment.name} successfully!`
-    }
+    const message = `${assignment.isDeleted?'Hide':'Unhide'} assignment ${assignment.name} successfully!`;
     res.send({
         success: true,
         message,
@@ -203,23 +201,23 @@ exports.hideOrUnhide = async (req, res) => {
     });
 };
 
-exports.submit = async (req, res) => {
+exports.submit = async(req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
 
-    let today = new Date();
+    const today = new Date();
     const setting = assignment.setting;
     if ((today >= setting.startTime && today <= setting.expireTime) ||
-        (setting.isOverDue && today <= setting.overDueDate
-            && today >= setting.startTime)) {
-        let file = {
+        (setting.isOverDue && today <= setting.overDueDate &&
+            today >= setting.startTime)) {
+        const file = {
             name: req.body.file.name,
             path: req.body.file.path,
             type: req.body.file.type,
             uploadDay: new Date()
         }
         var index = 0;
-        var submitted = assignment.submissions.find(value => value.idStudent == req.student._id);
+        const submitted = assignment.submissions.find(value => value.idStudent.equals(req.student._id));
         if (submitted) {
             if (!submitted.feedBack) {
                 index = assignment.submissions.indexOf(submitted);
@@ -237,12 +235,17 @@ exports.submit = async (req, res) => {
             index = assignment.submissions.push(submission) - 1;
         }
         await subject.save();
+
+        const mailOptions = new MailOptions({
+            to: req.student.emailAddress,
+            subject: 'No reply this email',
+            text: `You currently submit to assignment "${assignment.name}" in subject "${subject.name}"`
+        });
+        sendMail(mailOptions);
         res.json({
             success: true,
             submission: assignment.submissions[index]
         });
-
-
     } else {
         let message = "";
         if (today <= setting.startTime) {
@@ -254,11 +257,11 @@ exports.submit = async (req, res) => {
     }
 };
 
-exports.gradeSubmission = async (req, res) => {
+exports.gradeSubmission = async(req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
 
-    var submitted = assignment.submissions.find(value => value._id == req.params.idSubmission);
+    const submitted = assignment.submissions.find(value => value._id.equals(req.params.idSubmission));
     if (!submitted) {
         throw new HttpNotFound("Not found submission");
     }
@@ -269,7 +272,15 @@ exports.gradeSubmission = async (req, res) => {
     }
 
     await subject.save();
-    const student = await User.findById(submitted.idStudent, 'code firstName surName');
+    const student = await User.findById(submitted.idStudent, 'code firstName surName emailAddress');
+
+    const mailOptions = new MailOptions({
+        to: student.emailAddress,
+        subject: 'No reply this email',
+        text: `Your submission for assignment "${assignment.name}" in subject "${subject.name}" is currently graded`
+    });
+    sendMail(mailOptions);
+
     res.json({
         success: true,
         message: `Grade submission of student with code: ${student.code} successfully!`,
@@ -277,11 +288,11 @@ exports.gradeSubmission = async (req, res) => {
     });
 }
 
-exports.commentFeedback = async (req, res) => {
+exports.commentFeedback = async(req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
 
-    const submitted = assignment.submissions.find(value => value._id == req.params.idSubmission);
+    const submitted = assignment.submissions.find(value => value._id.equals(req.params.idSubmission));
     if (!submitted) {
         throw new HttpNotFound("Not found submission");
     }
@@ -294,15 +305,14 @@ exports.commentFeedback = async (req, res) => {
     })
 
     await subject.save();
-    const comments = await Promise.all(submitted.feedBack.comments.map(async (comment) => {
+    const comments = await Promise.all(submitted.feedBack.comments.map(async(comment) => {
         const user = await User.findById(comment.idUser, 'code firstName surName urlAvatar');
         return {
             _id: comment._id,
             user: user,
             content: comment.content
         }
-    }
-    ));
+    }));
     res.json({
         success: true,
         message: 'Comment feedback of submission successfully!',

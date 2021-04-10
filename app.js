@@ -16,17 +16,19 @@ app.use("/announcement", require("./routes/announcement"));
 app.use("/assignment", require("./routes/assignment"));
 app.use("/forum", require("./routes/forum"));
 app.use("/topic", require("./routes/topic"));
-app.use("/quiz", require("./routes/quizBank"));
-app.use("/survey", require("./routes/surveyBank"));
+app.use("/quiz-bank", require("./routes/quizBank"));
+app.use("/survey-bank", require("./routes/surveyBank"));
+app.use("/exam", require("./routes/exam"));
+app.use("/survey", require("./routes/survey"));
 
 //Setup Error Handlers
 const errorHandlers = require("./handlers/errorHandlers");
 app.use(errorHandlers.notFound);
 app.use(errorHandlers.mongoseErrors);
 if (process.env.ENV === "DEVELOPMENT") {
-  app.use(errorHandlers.developmentErrors);
+    app.use(errorHandlers.developmentErrors);
 } else {
-  app.use(errorHandlers.productionErrors);
+    app.use(errorHandlers.productionErrors);
 }
 
 module.exports = app;

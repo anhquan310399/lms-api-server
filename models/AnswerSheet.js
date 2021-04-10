@@ -36,16 +36,16 @@ const studentAnswerSheet = new mongoose.Schema({
 });
 
 studentAnswerSheet.pre('save', async function (next) {
-    let answerSheet = this;
+    const answerSheet = this;
     if (!answerSheet.isNew && answerSheet.isModified('answers')) {
-        let exam = answerSheet.parent();
-        let quizBank = answerSheet.parent().parent().parent().quizBank
+        const exam = answerSheet.parent();
+        const quizBank = answerSheet.parent().parent().parent().quizBank
             .find(value => {
-                return value._id = exam.setting.code;
+                return value._id.equals(exam.setting.code);
             });
         let amount = await answerSheet.answers.reduce(async function (res, current) {
             let question = await quizBank.questions.find(function (value) {
-                return (value._id == current.questionId);
+                return (value._id.equals(current.idQuestion));
             });
             let grade = 0;
 
@@ -53,17 +53,17 @@ studentAnswerSheet.pre('save', async function (next) {
                 let correctAnswer = question.answers.find(answer => {
                     return answer.isCorrect;
                 });
-                if (correctAnswer._id == current.answerId) {
+                if (correctAnswer._id.equals(current.idAnswer)) {
                     grade++;
                 }
             } else if (question.typeQuestion === 'multiple') {
                 let correctAnswers = question.answers.filter(answer => {
                     return answer.isCorrect;
                 });
-                if (current.answerId.length <= correctAnswers.length) {
+                if (current.idAnswer.length <= correctAnswers.length) {
                     correctAnswers.forEach(answer => {
-                        current.answerId.forEach(element => {
-                            if (answer._id == element) {
+                        current.idAnswer.forEach(element => {
+                            if (answer._id.equals(element)) {
                                 grade++;
                                 return;
                             }

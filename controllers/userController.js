@@ -1,129 +1,110 @@
-
 const mongoose = require("mongoose");
 const User = mongoose.model("User");
 const { verifyGoogle, verifyFacebook } = require('../handlers/verifySocialHandler');
+const { HttpNotFound, HttpUnauthorized, HttpBadRequest, HttpInternalServerError } = require('../utils/errors');
 
-exports.create = async (req, res) => {
+exports.create = async(req, res) => {
     const user = new User({
         code: req.body.code,
         idPrivilege: req.body.idPrivilege,
         emailAddress: req.body.emailAddress,
         firstName: req.body.firstName,
-        surName: req.body.surName
+        lastName: req.body.lastName
     });
     const data = await user.save();
 
     res.json(data);
 };
 
-exports.findAll = async (req, res) => {
+exports.findAll = async(req, res) => {
     const users = await User.find();
     res.json(users);
 };
 
-exports.findAllStudents = async (req, res) => {
+exports.findAllStudents = async(req, res) => {
     const students = await User.find({ idPrivilege: 'student' },
-        'code emailAddress idPrivilege firstName surName urlAvatar isDeleted');
+        'code emailAddress idPrivilege firstName lastName urlAvatar isDeleted');
     res.json(students);
 };
 
-exports.findAllTeachers = async (req, res) => {
+exports.findAllTeachers = async(req, res) => {
     const teachers = await User.find({ idPrivilege: 'teacher' },
-        'code emailAddress idPrivilege firstName surName urlAvatar isDeleted');
+        'code emailAddress idPrivilege firstName lastName urlAvatar isDeleted');
     res.json(teachers);
 };
 
-exports.findUser = async (req, res) => {
+exports.findUser = async(req, res) => {
     const user = await User.findOne({ code: req.params.code },
-        'code emailAddress firstName surName urlAvatar');
+        'code emailAddress firstName lastName urlAvatar');
     res.json(user);
 };
 
-exports.update = async (req, res) => {
-    let user = req.user;
-    user.surName = req.body.surName || user.surName;
+exports.update = async(req, res) => {
+    const user = req.user;
+    user.lastName = req.body.lastName || user.lastName;
     user.firstName = req.body.firstName || user.firstName;
     user.urlAvatar = req.body.urlAvatar || user.urlAvatar;
-
+    user.isNotify = req.body.isNotify || user.isNotify;
     await user.save();
 
     res.json({
         user: {
-            _id: data._id,
-            code: data.code,
-            emailAddress: data.emailAddress,
-            firstName: data.firstName,
-            surName: data.surName,
-            urlAvatar: data.urlAvatar,
-            facebookId: data.facebookId,
-            idPrivilege: data.idPrivilege
+            _id: user._id,
+            code: user.code,
+            emailAddress: user.emailAddress,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            urlAvatar: user.urlAvatar,
+            facebookId: user.facebookId,
+            idPrivilege: user.idPrivilege,
+            isNotify: user.isNotify
         }
     })
 };
 
-exports.updatePassword = async (req, res) => {
-    let user = req.user;
-    let isAuth = user.comparePassword(req.body.password);
+exports.updatePassword = async(req, res) => {
+    const user = req.user;
+    const isAuth = user.comparePassword(req.body.password);
     if (!isAuth) {
-        return res.status(400).json({
-            success: false,
-            message: 'Password is not valid',
-        });
+        throw new HttpBadRequest('Password is not valid');
     }
     user.password = req.body.newPassword;
     await user.save();
-
     res.json({
         success: true,
         message: `Update password successfully`,
     });
 };
 
-exports.hideOrUnhide = async (req, res) => {
+exports.hideOrUnhide = async(req, res) => {
     const user = await User.findById(req.params.id);
 
     if (!user) {
-        return res.status(404).json({
-            success: false,
-            message: "Not found user",
-        });
+        throw new HttpNotFound("Not found user");
     }
-
     user.isDeleted = !user.isDeleted;
 
     await user.save();
+    const message = `${user.isDeleted?'Lock':'Unlock'} user with code: ${user.code} successfully!`;
 
-    let message;
-    if (user.isDeleted) {
-        message = `Lock user with code: ${user.code} successfully!`;
-    } else {
-        message = `Unlock user with code: ${user.code} successfully!`;
-    }
-    res.send({
+    res.json({
         success: true,
         message: message,
     });
 };
 
-exports.authenticate = async (req, res) => {
+exports.authenticate = async(req, res) => {
     const user = await User.findOne({ code: req.body.code, isDeleted: false });
 
     if (!user) {
-        return res.status(404).json({
-            success: false,
-            message: 'Authentication failed. User not found'
-        });
+        throw new HttpNotFound('Authentication failed. User not found');
     }
 
     var validPassword = user.comparePassword(req.body.password);
     if (!validPassword) {
-        return res.status(400).send({
-            success: false,
-            message: 'Authentication failed. Wrong password!'
-        });
+        throw new HttpBadRequest('Authentication failed. Wrong password!');
     }
-
-    let token = user.generateAuthToken();
+    const token = user.generateAuthToken();
     res.json({
         success: true,
         message: 'Login successfully!',
@@ -132,44 +113,39 @@ exports.authenticate = async (req, res) => {
             code: user.code,
             emailAddress: user.emailAddress,
             firstName: user.firstName,
-            surName: user.surName,
+            lastName: user.lastName,
             urlAvatar: user.urlAvatar,
             idPrivilege: user.idPrivilege,
-            facebookId: user.facebookId
+            facebookId: user.facebookId,
+            isNotify: user.isNotify
         },
         type: 'authenticate',
         token: token
     });
 }
 
-exports.getInfo = async (req, res) => {
-    var user = req.user;
-    var info = {
+exports.getInfo = async(req, res) => {
+    const user = req.user;
+    const info = {
         _id: user._id,
         code: user.code,
         emailAddress: user.emailAddress,
         firstName: user.firstName,
-        surName: user.surName,
+        lastName: user.lastName,
         urlAvatar: user.urlAvatar
     }
     res.json(info);
 }
 
-exports.authenticateGoogleToken = async (req, res) => {
+exports.authenticateGoogleToken = async(req, res) => {
     const userToken = req.body.token
     const payload = await verifyGoogle(userToken);
-
-    var userEmail = payload.email;
-
+    const userEmail = payload.email;
     const user = await User.findOne({ emailAddress: userEmail, isDeleted: false },
-        'code idPrivilege emailAddress firstName surName urlAvatar facebookId');
+        'code idPrivilege emailAddress firstName lastName urlAvatar facebookId isNotify');
 
     if (!user) {
-        return res.status(404).json({
-            success: false,
-            message: `Not found user ${userEmail}`
-        });
-
+        throw new HttpNotFound(`Not found user ${userEmail}`);
     }
 
     const token = user.generateAuthToken();
@@ -182,27 +158,21 @@ exports.authenticateGoogleToken = async (req, res) => {
     });
 }
 
-exports.authenticateFacebookToken = async (req, res) => {
+exports.authenticateFacebookToken = async(req, res) => {
     const userToken = req.body.token
 
     const payload = await verifyFacebook(userToken);
 
     if (!payload) {
-        res.status(500).json({
-            success: false,
-            message: 'Error while verify facebook access token'
-        })
+        throw new HttpInternalServerError('Error while verify facebook access token')
     }
 
     let facebookId = payload.id;
     const user = await User.findOne({ facebookId: facebookId, isDeleted: false },
-        'code idPrivilege emailAddress firstName surName urlAvatar facebookId');
+        'code idPrivilege emailAddress firstName lastName urlAvatar facebookId isNotify');
 
     if (!user) {
-        return res.status(404).json({
-            success: false,
-            message: `Not found user with this facebook`
-        })
+        throw new HttpNotFound(`Not found user with this facebook`)
     }
 
     const token = user.generateAuthToken();
@@ -215,34 +185,25 @@ exports.authenticateFacebookToken = async (req, res) => {
     });
 }
 
-exports.linkFacebookAccount = async (req, res) => {
+exports.linkFacebookAccount = async(req, res) => {
     const userToken = req.body.token
     console.log(req.user);
     console.log(req.user.facebookId);
     if (req.user.facebookId) {
-        return res.status(409).json({
-            success: false,
-            message: 'Your account has already linked facebook account!'
-        })
+        throw new HttpUnauthorized('Your account has already linked facebook account!');
     }
 
     const payload = await verifyFacebook(userToken);
 
     if (!payload) {
-        return res.status(500).json({
-            success: false,
-            message: 'Error while verify facebook access token'
-        })
+        throw new HttpInternalServerError('Error while verify facebook access token')
     }
 
     const facebookId = payload.id;
 
     const fbUser = await User.findOne({ facebookId: facebookId });
     if (fbUser) {
-        return res.status(409).send({
-            success: false,
-            message: 'This facebook account is linked with another account!'
-        })
+        throw new HttpUnauthorized('This facebook account is linked with another account!');
     }
 
     const user = req.user
@@ -257,10 +218,11 @@ exports.linkFacebookAccount = async (req, res) => {
             code: user.code,
             emailAddress: user.emailAddress,
             firstName: user.firstName,
-            surName: user.surName,
+            lastName: user.lastName,
             urlAvatar: user.urlAvatar,
             idPrivilege: user.idPrivilege,
-            facebookId: user.facebookId
+            facebookId: user.facebookId,
+            isNotify: user.isNotify
         },
         message: `Link to facebook ${payload.name} successfully!`
     })
@@ -268,13 +230,10 @@ exports.linkFacebookAccount = async (req, res) => {
 
 }
 
-exports.unlinkFacebookAccount = async (req, res) => {
+exports.unlinkFacebookAccount = async(req, res) => {
     const user = req.user;
     if (!user.facebookId) {
-        res.status(409).json({
-            success: false,
-            message: `Your account hasn't already linked facebook!`
-        })
+        throw new HttpUnauthorized(`Your account hasn't already linked facebook!`)
     }
     user.facebookId = undefined;
     await user.save();
@@ -286,9 +245,10 @@ exports.unlinkFacebookAccount = async (req, res) => {
             code: user.code,
             emailAddress: user.emailAddress,
             firstName: user.firstName,
-            surName: user.surName,
+            lastName: user.lastName,
             urlAvatar: user.urlAvatar,
-            idPrivilege: user.idPrivilege
+            idPrivilege: user.idPrivilege,
+            isNotify: user.isNotify
         },
         message: `UnLink to facebook successfully!`
     });

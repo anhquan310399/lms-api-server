@@ -13,7 +13,7 @@ const UserSchema = mongoose.Schema({
     },
     password: {
         type: String,
-        default: function () {
+        default: function() {
             return this.code
         }
     },
@@ -21,7 +21,7 @@ const UserSchema = mongoose.Schema({
         type: String,
         ref: 'Privilege',
         required: [true, 'idPrivilege is required'],
-        validate: async function (value) {
+        validate: async function(value) {
             await Privileges.findOne({ role: value })
                 .then(privilege => {
                     if (!privilege) {
@@ -39,7 +39,7 @@ const UserSchema = mongoose.Schema({
         required: [true, 'Email address is required'],
         unique: [true, `Email address is existed`],
         lowercase: true,
-        validate: function (value) {
+        validate: function(value) {
             if (this.idPrivilege !== 'admin') {
                 if (!validator.isEmail(value)) {
                     throw new ValidatorError({ message: 'Invalid Email address' });
@@ -53,9 +53,9 @@ const UserSchema = mongoose.Schema({
         type: String,
         required: [true, 'First name is required']
     },
-    surName: {
+    lastName: {
         type: String,
-        required: [true, 'Surname is required']
+        required: [true, 'Last name is required']
     },
     urlAvatar: {
         type: String,
@@ -65,6 +65,10 @@ const UserSchema = mongoose.Schema({
     isDeleted: {
         type: Boolean,
         default: false
+    },
+    isNotify: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true,
@@ -73,7 +77,7 @@ const UserSchema = mongoose.Schema({
 
 const saltRounds = 10;
 // hash the password before the user is saved
-UserSchema.pre('save', function (next) {
+UserSchema.pre('save', function(next) {
     var user = this;
     // hash the password only if the password has been changed or user is new
     if (!user.isModified('password')) {
@@ -83,7 +87,7 @@ UserSchema.pre('save', function (next) {
     }
 
     // generate the hash
-    bcrypt.hash(user.password, saltRounds, function (err, hash) {
+    bcrypt.hash(user.password, saltRounds, function(err, hash) {
         if (err) return next(err);
         // change the password to the hashed version
         user.password = hash;
@@ -91,13 +95,13 @@ UserSchema.pre('save', function (next) {
     });
 });
 
-UserSchema.methods.comparePassword = function (password) {
+UserSchema.methods.comparePassword = function(password) {
     var user = this;
 
     return bcrypt.compareSync(password, user.password);
 };
 
-UserSchema.methods.generateAuthToken = function () {
+UserSchema.methods.generateAuthToken = function() {
     // Generate an auth token for the user
     const user = this
     var superSecret = process.env.JWT_KEY;
@@ -107,7 +111,7 @@ UserSchema.methods.generateAuthToken = function () {
         idPrivilege: user.privilege,
         emailAddress: user.emailAddress,
         firstName: user.firstName,
-        surName: user.surName,
+        lastName: user.lastName,
     }, superSecret, {
         expiresIn: '24h'
     });

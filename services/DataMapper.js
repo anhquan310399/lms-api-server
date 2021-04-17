@@ -80,26 +80,26 @@ const getDetailTimeline = (timeline, isStudent) => {
     };
 }
 
-const filterTimelines = async (timelines, isStudent) => {
-    const res = _.sortBy(await Promise.all(timelines.map(async (timeline) => {
+const filterTimelines = async(timelines, isStudent) => {
+    const res = _.sortBy(await Promise.all(timelines.map(async(timeline) => {
         return getDetailTimeline(timeline, isStudent);
     })), ['index']);
     return res;
 }
 
-const getListAssignmentAndExam = async (subject, today) => {
+const getListAssignmentAndExam = async(subject, today) => {
     let assignmentOrExam = await subject.timelines.reduce(
-        async (preField, currentTimeline) => {
+        async(preField, currentTimeline) => {
             if (currentTimeline.isDeleted) {
                 let result = await preField;
                 return result;
             } else {
-                let exams = await Promise.all(currentTimeline.exams.map(async (exam) => {
+                let exams = await Promise.all(currentTimeline.exams.map(async(exam) => {
                     if (exam.isDeleted) {
                         return null;
                     }
                     let exists = [];
-                    let submissions = await exam.submissions.reduce(function (prePromise, submission) {
+                    let submissions = await exam.submissions.reduce(function(prePromise, submission) {
                         let exist = exists.find(value => value.idStudent == submission.idStudent);
                         if (exist) {
                             let existSubmission = prePromise[exist.index];
@@ -129,12 +129,12 @@ const getListAssignmentAndExam = async (subject, today) => {
                         type: 'exam',
                     }
                 }));
-                let assignments = await Promise.all(currentTimeline.assignments.map(async (assignment) => {
+                let assignments = await Promise.all(currentTimeline.assignments.map(async(assignment) => {
                     if (assignment.isDeleted) {
                         return null;
                     }
 
-                    let submissions = await Promise.all(assignment.submissions.map(async (submission) => {
+                    let submissions = await Promise.all(assignment.submissions.map(async(submission) => {
                         return {
                             // _id: submission._id,
                             idStudent: submission.idStudent,
@@ -167,9 +167,9 @@ const getListAssignmentAndExam = async (subject, today) => {
     return assignmentOrExam;
 }
 
-const getTimelineExport = async (timelines) => {
-    const result = await Promise.all(timelines.map(async (timeline) => {
-        let surveys = await Promise.all(timeline.surveys.map(async (survey) => {
+const getTimelineExport = async(timelines) => {
+    const result = await Promise.all(timelines.map(async(timeline) => {
+        let surveys = await Promise.all(timeline.surveys.map(async(survey) => {
             return {
                 name: survey.name,
                 description: survey.description,
@@ -221,8 +221,8 @@ const getTimelineExport = async (timelines) => {
     return _.sortBy(result, ['index']);
 }
 
-const getSurveyBankExport = async (surveyBank) => {
-    return await Promise.all(surveyBank.map(async (questionnaire) => {
+const getSurveyBankExport = async(surveyBank) => {
+    return await Promise.all(surveyBank.map(async(questionnaire) => {
         const questions = questionnaire.questions.map(question => {
             if (question.typeQuestion === 'choice' || question.typeQuestion === 'multiple') {
                 const answers = question.answer.map(answer => {
@@ -248,8 +248,8 @@ const getSurveyBankExport = async (surveyBank) => {
     }))
 }
 
-const getQuizBankExport = async (quizBank) => {
-    return await Promise.all(quizBank.map(async (questionnaire) => {
+const getQuizBankExport = async(quizBank) => {
+    return await Promise.all(quizBank.map(async(questionnaire) => {
         const questions = questionnaire.questions.map((question) => {
             const answers = question.answers.map(option => {
                 return {
@@ -333,8 +333,8 @@ const getDeadlineOfSubject = (subject, student) => {
     return deadline;
 }
 
-const getCommonInfoTopic = async (topic) => {
-    const creator = await User.findById(topic.idUser, 'code firstName surName urlAvatar');
+const getCommonInfoTopic = async(topic) => {
+    const creator = await User.findById(topic.idUser, 'code firstName lastName urlAvatar');
     return {
         _id: topic._id,
         name: topic.name,
@@ -346,8 +346,8 @@ const getCommonInfoTopic = async (topic) => {
 
 }
 
-const getDetailComment = async (comment) => {
-    let creator = await User.findById(comment.idUser, 'code firstName surName urlAvatar')
+const getDetailComment = async(comment) => {
+    let creator = await User.findById(comment.idUser, 'code firstName lastName urlAvatar')
     return {
         _id: comment._id,
         content: comment.content,
@@ -357,11 +357,20 @@ const getDetailComment = async (comment) => {
     }
 }
 
-const getInfoQuestionBank = (bank)=>{
+const getInfoQuestionBank = (bank) => {
     return {
         _id: bank._id,
         name: bank.name,
         questionCount: bank.questions.length
+    }
+}
+
+const getDetailMessage = async(message) => {
+    let user = await User.findById(message.idUser, 'code emailAddress firstName lastName urlAvatar')
+    return {
+        _id: message._id,
+        user,
+        message: message.message
     }
 }
 
@@ -376,5 +385,6 @@ module.exports = {
     getDeadlineOfSubject,
     getCommonInfoTopic,
     getDetailComment,
-    getInfoQuestionBank
+    getInfoQuestionBank,
+    getDetailMessage
 }

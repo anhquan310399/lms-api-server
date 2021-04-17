@@ -3,15 +3,17 @@ const Subject = mongoose.model("Subject");
 const User = mongoose.model("User");
 const { HttpNotFound, HttpBadRequest } = require('../utils/errors');
 const examStatusCodes = require('../constants/examStatusCodes');
-const { filterTimelines,
+const {
+    filterTimelines,
     getListAssignmentAndExam,
     getTimelineExport,
     getSurveyBankExport,
     getQuizBankExport,
-    getDeadlineOfSubject } = require('../services/DataMapper');
+    getDeadlineOfSubject
+} = require('../services/DataMapper');
 const _ = require('lodash');
 
-exports.create = async (req, res) => {
+exports.create = async(req, res) => {
     const data = new Subject({
         name: req.body.name,
         idLecture: req.body.idLecture,
@@ -23,7 +25,7 @@ exports.create = async (req, res) => {
 
     const subject = await data.save();
     const teacher = await User.findOne({ code: subject.idLecture },
-        'code firstName surName urlAvatar');
+        'code firstName lastName urlAvatar');
     res.json({
         success: true,
         subject: {
@@ -37,21 +39,21 @@ exports.create = async (req, res) => {
     });
 };
 
-exports.findAll = async (req, res) => {
+exports.findAll = async(req, res) => {
     const idPrivilege = req.user.idPrivilege;
     let allSubject = [];
     if (idPrivilege === 'teacher') {
         allSubject = await Subject.find({ idLecture: req.user.code, isDeleted: false }, "name");
     } else if (idPrivilege === 'student') {
         const subjects = await Subject.find({ 'studentIds': req.user.code, isDeleted: false })
-        allSubject = await Promise.all(subjects.map(async (value) => {
-            var teacher = await User.findOne({ code: value.idLecture }, 'code firstName surName urlAvatar')
+        allSubject = await Promise.all(subjects.map(async(value) => {
+            var teacher = await User.findOne({ code: value.idLecture }, 'code firstName lastName urlAvatar')
             return { _id: value._id, name: value.name, lecture: teacher };
         }));
     } else if (idPrivilege === 'admin') {
         const subjects = await Subject.find({});
-        allSubject = await Promise.all(subjects.map(async (value) => {
-            var teacher = await User.findOne({ code: value.idLecture }, 'code firstName surName urlAvatar')
+        allSubject = await Promise.all(subjects.map(async(value) => {
+            var teacher = await User.findOne({ code: value.idLecture }, 'code firstName lastName urlAvatar')
             return { _id: value._id, name: value.name, lecture: teacher };
         }));
     }
@@ -62,7 +64,7 @@ exports.findAll = async (req, res) => {
     });
 };
 
-exports.find = async (req, res) => {
+exports.find = async(req, res) => {
     const subject = req.subject;
     let timelines = req.subject.timelines;
 
@@ -76,7 +78,7 @@ exports.find = async (req, res) => {
     }
 
     const teacher = await User.findOne({ code: subject.idLecture },
-        'code firstName surName urlAvatar');
+        'code firstName lastName urlAvatar');
 
     let result = {
         _id: subject._id,
@@ -90,13 +92,13 @@ exports.find = async (req, res) => {
     });
 };
 
-exports.findByAdmin = async (req, res) => {
+exports.findByAdmin = async(req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
     }
     var teacher = await User.findOne({ code: subject.idLecture },
-        'code firstName surName urlAvatar');
+        'code firstName lastName urlAvatar');
     res.json({
         success: true,
         subject: {
@@ -109,7 +111,7 @@ exports.findByAdmin = async (req, res) => {
     });
 }
 
-exports.update = async (req, res) => {
+exports.update = async(req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -130,7 +132,7 @@ exports.update = async (req, res) => {
     });
 };
 
-exports.importSubject = async (req, res) => {
+exports.importSubject = async(req, res) => {
     let subject = req.subject;
 
     if (req.body.timelines) {
@@ -178,7 +180,7 @@ exports.importSubject = async (req, res) => {
     });
 };
 
-exports.delete = async (req, res) => {
+exports.delete = async(req, res) => {
     const data = await Subject.findByIdAndDelete(req.params.idSubject)
     if (!data) {
         throw new HttpNotFound("Not found subject");
@@ -190,7 +192,7 @@ exports.delete = async (req, res) => {
 
 };
 
-exports.hideOrUnhide = async (req, res) => {
+exports.hideOrUnhide = async(req, res) => {
     const subject = await Subject.findById(req.params.idSubject)
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -209,7 +211,7 @@ exports.hideOrUnhide = async (req, res) => {
     });
 };
 
-exports.addListStudents = async (req, res) => {
+exports.addListStudents = async(req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -225,7 +227,7 @@ exports.addListStudents = async (req, res) => {
 
 };
 
-exports.addStudent = async (req, res) => {
+exports.addStudent = async(req, res) => {
     let subject = req.subject;
 
     let idStudent = subject.studentIds.find(value => { return value === req.body.idStudent });
@@ -234,15 +236,15 @@ exports.addStudent = async (req, res) => {
     }
 
     const user = await User.findOne({ code: req.body.idStudent, idPrivilege: 'student' },
-        'code firstName surName urlAvatar');
+        'code firstName lastName urlAvatar');
     if (!user) {
         throw new HttpNotFound(`Not found student with id: ${req.body.idStudent}`);
     }
     subject.studentIds.push(req.body.idStudent);
     await subject.save()
 
-    const info = await Promise.all(subject.studentIds.map(async function (value) {
-        var student = await User.findOne({ code: value }, 'code emailAddress firstName surName urlAvatar');
+    const info = await Promise.all(subject.studentIds.map(async function(value) {
+        var student = await User.findOne({ code: value }, 'code emailAddress firstName lastName urlAvatar');
         return student;
     }));
 
@@ -253,7 +255,7 @@ exports.addStudent = async (req, res) => {
     });
 };
 
-exports.removeStudent = async (req, res) => {
+exports.removeStudent = async(req, res) => {
     // Validate request
     let subject = req.subject;
 
@@ -264,9 +266,9 @@ exports.removeStudent = async (req, res) => {
     subject.studentIds.splice(index, 1);
     await subject.save();
 
-    const info = await Promise.all(subject.studentIds.map(async function (value) {
+    const info = await Promise.all(subject.studentIds.map(async function(value) {
         var student = await User.findOne({ code: value },
-            'code emailAddress firstName surName urlAvatar');
+            'code emailAddress firstName lastName urlAvatar');
         return student;
     }));
     // res.send(data);
@@ -277,7 +279,7 @@ exports.removeStudent = async (req, res) => {
     });
 }
 
-exports.adjustOrderOfTimeline = async (req, res) => {
+exports.adjustOrderOfTimeline = async(req, res) => {
     const adjust = req.body;
     const subject = req.subject;
     await adjust.forEach(element => {
@@ -294,7 +296,7 @@ exports.adjustOrderOfTimeline = async (req, res) => {
     })
 }
 
-exports.getOrderOfTimeLine = async (req, res) => {
+exports.getOrderOfTimeLine = async(req, res) => {
     const data = req.subject;
     let result = {
         _id: data._id,
@@ -309,12 +311,12 @@ exports.getOrderOfTimeLine = async (req, res) => {
     });
 }
 
-exports.getListStudent = async (req, res) => {
+exports.getListStudent = async(req, res) => {
     const subject = req.subject;
 
-    var info = await Promise.all(subject.studentIds.map(async function (value) {
+    var info = await Promise.all(subject.studentIds.map(async function(value) {
         var student = await User.findOne({ code: value },
-            'code emailAddress firstName surName urlAvatar');
+            'code emailAddress firstName lastName urlAvatar');
 
         return student;
     }));
@@ -325,13 +327,13 @@ exports.getListStudent = async (req, res) => {
 }
 
 
-exports.getSubjectTranscript = async (req, res) => {
+exports.getSubjectTranscript = async(req, res) => {
     let subject = req.subject;
     let today = new Date();
     let fields = await getListAssignmentAndExam(subject, today);
 
     if (req.user.idPrivilege === 'student') {
-        let transcript = await Promise.all(fields.map(async (field) => {
+        let transcript = await Promise.all(fields.map(async(field) => {
             let submission = await field.submissions.find(value => value.idStudent == req.user._id);
             let grade = 0;
             let status;
@@ -368,10 +370,10 @@ exports.getSubjectTranscript = async (req, res) => {
         }))
         return res.send(transcript);
     } else {
-        let transcript = await Promise.all(fields.map(async (field) => {
+        let transcript = await Promise.all(fields.map(async(field) => {
             let submissions = await Promise.all(subject.studentIds.map(
-                async (value) => {
-                    let student = await User.findOne({ code: value }, 'code firstName surName urlAvatar');
+                async(value) => {
+                    let student = await User.findOne({ code: value }, 'code firstName lastName urlAvatar');
 
                     let submission = field.submissions.find(value => value.idStudent == student._id);
                     let isRemain = field.isRemain;
@@ -423,7 +425,7 @@ exports.getSubjectTranscript = async (req, res) => {
     }
 }
 
-exports.getSubjectTranscriptTotal = async (req, res) => {
+exports.getSubjectTranscriptTotal = async(req, res) => {
     let subject = req.subject;
     let today = new Date();
     let assignmentOrExam = await getListAssignmentAndExam(subject, today);
@@ -444,16 +446,16 @@ exports.getSubjectTranscriptTotal = async (req, res) => {
     });
 
     let data = await Promise.all(subject.studentIds.map(
-        async (value) => {
-            let student = await User.findOne({ code: value }, 'code firstName surName urlAvatar')
+        async(value) => {
+            let student = await User.findOne({ code: value }, 'code firstName lastName urlAvatar')
                 .then(value => { return value });
             let data = {
                 'c0': student.code,
-                'c1': student.surName,
+                'c1': student.lastName,
                 'c2': student.firstName
             };
             let count = 3;
-            let grade = await Promise.all(assignmentOrExam.map(async (value) => {
+            let grade = await Promise.all(assignmentOrExam.map(async(value) => {
                 let submission = value.submissions.find(value => value.idStudent == student._id);
                 if (submission) {
                     return submission.grade;
@@ -486,10 +488,10 @@ exports.getSubjectTranscriptTotal = async (req, res) => {
 
 }
 
-exports.updateRatioTranscript = async (req, res) => {
+exports.updateRatioTranscript = async(req, res) => {
     let subject = req.subject;
     let adjust = req.body;
-    await adjust.forEach(async (value) => {
+    await adjust.forEach(async(value) => {
         let transcript = await subject.transcript.find(ratio => ratio._id == value._id);
         if (transcript) {
             transcript.ratio = value.ratio;
@@ -501,7 +503,7 @@ exports.updateRatioTranscript = async (req, res) => {
     return this.getSubjectTranscriptTotal(req, res);
 }
 
-exports.exportSubject = async (req, res) => {
+exports.exportSubject = async(req, res) => {
     const subject = await Subject.findById(req.params.idSubject)
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -523,7 +525,7 @@ exports.exportSubject = async (req, res) => {
     res.send(subject)
 }
 
-exports.exportSubjectWithCondition = async (req, res) => {
+exports.exportSubjectWithCondition = async(req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -558,7 +560,7 @@ exports.exportSubjectWithCondition = async (req, res) => {
     res.send(data);
 }
 
-exports.getDeadline = async (req, res) => {
+exports.getDeadline = async(req, res) => {
     const listSubject = await Subject.find({ 'studentIds': req.student.code, isDeleted: false });
     let deadline = [];
     listSubject.forEach(subject => {
@@ -571,7 +573,7 @@ exports.getDeadline = async (req, res) => {
     });
 }
 
-exports.getDeadlineBySubject = async (req, res) => {
+exports.getDeadlineBySubject = async(req, res) => {
     let deadline = getDeadlineOfSubject(req.subject, req.student);
 
     res.json({

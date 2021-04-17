@@ -3,7 +3,7 @@ const User = mongoose.model("User");
 const { HttpNotFound, HttpUnauthorized } = require('../utils/errors');
 const { getCommonInfoTopic, getDetailComment } = require('../services/DataMapper');
 const { findForum, findTopic } = require('../services/DataSearcher');
-exports.create = async (req, res) => {
+exports.create = async(req, res) => {
     const subject = req.subject;
     const forum = findForum(subject, req);
     const model = {
@@ -22,14 +22,14 @@ exports.create = async (req, res) => {
     });
 };
 
-exports.find = async (req, res) => {
+exports.find = async(req, res) => {
     const subject = req.subject;
     const { topic } = findTopic(subject, req);
-    const discussions = await Promise.all(topic.discussions.map(async function (value) {
+    const discussions = await Promise.all(topic.discussions.map(async function(value) {
         return getDetailComment(value);
     }));
 
-    const creator = await User.findById(topic.idUser, 'code firstName surName urlAvatar')
+    const creator = await User.findById(topic.idUser, 'code firstName lastName urlAvatar')
 
     res.json({
         success: true,
@@ -44,7 +44,7 @@ exports.find = async (req, res) => {
     });
 };
 
-exports.update = async (req, res) => {
+exports.update = async(req, res) => {
     const subject = req.subject;
     const { topic } = findTopic(subject, req);
     if (topic.idUser.toString() != req.user._id.toString()) {
@@ -60,7 +60,7 @@ exports.update = async (req, res) => {
     });
 };
 
-exports.delete = async (req, res) => {
+exports.delete = async(req, res) => {
     const subject = req.subject
     const { forum, topic } = findTopic(subject, req);
 
@@ -80,7 +80,7 @@ exports.delete = async (req, res) => {
     });
 };
 
-exports.discuss = async (req, res) => {
+exports.discuss = async(req, res) => {
     const subject = req.subject;
     const { topic } = findTopic(subject, req);
 
@@ -99,7 +99,7 @@ exports.discuss = async (req, res) => {
     });
 };
 
-exports.updateDiscussion = async (req, res) => {
+exports.updateDiscussion = async(req, res) => {
     const subject = req.subject
     const { topic } = findTopic(subject, req);
     const discussion = topic.discussions.find(value => value._id == req.params.idDiscussion);
@@ -111,16 +111,14 @@ exports.updateDiscussion = async (req, res) => {
     }
     discussion.content = req.body.data.content;
     await subject.save();
-    res.send(
-        {
-            success: true,
-            message: "Update discussion successfully!",
-            discussion: await getDetailComment(discussion)
-        }
-    );
+    res.send({
+        success: true,
+        message: "Update discussion successfully!",
+        discussion: await getDetailComment(discussion)
+    });
 };
 
-exports.deleteDiscussion = async (req, res) => {
+exports.deleteDiscussion = async(req, res) => {
     const subject = req.subject;
     const { topic } = findTopic(subject, req);
     const discussion = topic.discussions.find(value => value._id == req.params.idDiscussion);

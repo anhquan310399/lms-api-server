@@ -1,4 +1,6 @@
 const nodemailer = require('nodemailer');
+const mongoose = require("mongoose");
+const User = mongoose.model("User");
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
@@ -10,13 +12,22 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendMail = (mailOptions) => {
-    transporter.sendMail(mailOptions, function (error, info) {
-        if (error) {
+    User.findOne({ emailAddress: mailOptions.to },
+            'emailAddress isNotify')
+        .then(to => {
+            if (to.isNotify) {
+                transporter.sendMail(mailOptions, function(error, info) {
+                    if (error) {
+                        console.log(error);
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                    }
+                });
+            }
+        })
+        .catch(error => {
             console.log(error);
-        } else {
-            console.log('Email sent: ' + info.response);
-        }
-    });
+        });
 }
 
 module.exports = {

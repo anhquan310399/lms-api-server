@@ -75,7 +75,7 @@ exports.find = async(req, res) => {
     } else {
         let submissions = await Promise.all(assignment.submissions
             .map(async function(submit) {
-                var student = await User.findById(submit.idStudent, 'code firstName surName urlAvatar')
+                var student = await User.findById(submit.idStudent, 'code firstName lastName urlAvatar')
                     .then(value => {
                         return value
                     });
@@ -272,7 +272,7 @@ exports.gradeSubmission = async(req, res) => {
     }
 
     await subject.save();
-    const student = await User.findById(submitted.idStudent, 'code firstName surName emailAddress');
+    const student = await User.findById(submitted.idStudent, 'code firstName lastName emailAddress');
 
     const mailOptions = new MailOptions({
         to: student.emailAddress,
@@ -306,7 +306,7 @@ exports.commentFeedback = async(req, res) => {
 
     await subject.save();
     const comments = await Promise.all(submitted.feedBack.comments.map(async(comment) => {
-        const user = await User.findById(comment.idUser, 'code firstName surName urlAvatar');
+        const user = await User.findById(comment.idUser, 'code firstName lastName urlAvatar');
         return {
             _id: comment._id,
             user: user,

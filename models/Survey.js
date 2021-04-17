@@ -57,46 +57,46 @@ response.pre('save', async function(next) {
     const currentRely = this;
     const survey = currentRely.parent();
     const answerSheet = currentRely.answerSheet;
-    const questionnaire = survey.parent().parent().surveyBank.find(value => {
-        return value._id.equals(survey.code);
-    }).questions;
-    console.log(questionnaire);
-    if (answerSheet.length !== questionnaire.length) {
-        let err = new ValidatorError({
-            message: 'PLease fill all answer of questionnaire'
-        });
-        return next(err);
-    }
-    answerSheet.forEach(answerSheet => {
-        let question = questionnaire.find(value => value._id.equals(answerSheet.idQuestion));
-        if (!question) {
+    if (survey.isModified("responses")) {
+        const questionnaire = survey.parent().parent().surveyBank.find(value => {
+            return value._id.equals(survey.code);
+        }).questions;
+        if (answerSheet.length !== questionnaire.length) {
             let err = new ValidatorError({
-                message: `Can not found question ${answerSheet.idQuestion} in questionnaire`
+                message: 'PLease fill all answer of questionnaire'
             });
             return next(err);
         }
-        if (question.typeQuestion === 'choice') {
-            let answer = question.answer.find(value => value._id.equals(answerSheet.answer));
-            if (!answer) {
+        answerSheet.forEach(answerSheet => {
+            let question = questionnaire.find(value => value._id.equals(answerSheet.idQuestion));
+            if (!question) {
                 let err = new ValidatorError({
-                    message: `Can not found answer ${answerSheet.answer} in question ${question.question}`
+                    message: `Can not found question ${answerSheet.idQuestion} in questionnaire`
                 });
                 return next(err);
             }
-        } else if (question.typeQuestion === 'multiple') {
-            answerSheet.answer.forEach(currentAnswer => {
-                let answer = question.answer.find(value => value._id.equals(currentAnswer));
+            if (question.typeQuestion === 'choice') {
+                let answer = question.answer.find(value => value._id.equals(answerSheet.answer));
                 if (!answer) {
                     let err = new ValidatorError({
-                        message: `Can not found answer ${currentAnswer} in question ${question.question}`
+                        message: `Can not found answer ${answerSheet.answer} in question ${question.question}`
                     });
                     return next(err);
                 }
-            });
-        }
+            } else if (question.typeQuestion === 'multiple') {
+                answerSheet.answer.forEach(currentAnswer => {
+                    let answer = question.answer.find(value => value._id.equals(currentAnswer));
+                    if (!answer) {
+                        let err = new ValidatorError({
+                            message: `Can not found answer ${currentAnswer} in question ${question.question}`
+                        });
+                        return next(err);
+                    }
+                });
+            }
 
-    });
-
+        });
+    }
     next();
 });
 

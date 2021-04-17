@@ -73,7 +73,7 @@ exports.find = async(req, res) => {
                     _id: req.user._id,
                     code: req.user.code,
                     firstName: req.user.firstName,
-                    surName: req.user.surName,
+                    lastName: req.user.lastName,
                     urlAvatar: req.user.urlAvatar,
                 },
                 grade: (submission.isSubmitted || !isContinue) ? submission.grade : null,
@@ -109,7 +109,7 @@ exports.find = async(req, res) => {
         let key = 0;
         const submissions = await Promise.all(subject.studentIds.map(
             async(value) => {
-                const student = await User.findOne({ code: value }, 'code firstName surName urlAvatar');
+                const student = await User.findOne({ code: value }, 'code firstName lastName urlAvatar');
                 const submissions = exam.submissions.filter(value => value.idStudent.equals(student._id));
                 if (submissions && submissions.length > 0) {
                     const { _id, grade } = submissions.reduce((previous, current) => {

@@ -1,6 +1,6 @@
-const { HttpNotFound } = require('../utils/errors');
-const { getInfoQuestionBank } = require('../services/DataMapper')
-exports.createChapter = async (req, res) => {
+const { HttpNotFound } = require('../../utils/errors');
+const { getInfoQuestionBank } = require('../../services/DataMapper')
+exports.createChapter = async(req, res) => {
     const subject = req.subject;
     const model = {
         name: req.body.data.name,
@@ -15,7 +15,7 @@ exports.createChapter = async (req, res) => {
 
 };
 
-exports.findChapter = async (req, res) => {
+exports.findChapter = async(req, res) => {
     const subject = req.subject;
     const chapter = subject.quizBank.find(value => value._id == req.params.idChapter);
     if (!chapter) {
@@ -27,9 +27,9 @@ exports.findChapter = async (req, res) => {
     });
 };
 
-exports.findAllChapters = async (req, res) => {
+exports.findAllChapters = async(req, res) => {
     const subject = req.subject;
-    const quizBank = await Promise.all(subject.quizBank.map(async (value) => {
+    const quizBank = await Promise.all(subject.quizBank.map(async(value) => {
         return getInfoQuestionBank(value);
     }));
     res.json({
@@ -38,7 +38,7 @@ exports.findAllChapters = async (req, res) => {
     });
 };
 
-exports.updateChapter = async (req, res) => {
+exports.updateChapter = async(req, res) => {
     const subject = req.subject;
     const chapter = subject.quizBank.find(value => value._id == req.params.idChapter);
     if (!chapter) {
@@ -56,7 +56,7 @@ exports.updateChapter = async (req, res) => {
     });
 };
 
-exports.deleteChapter = async (req, res) => {
+exports.deleteChapter = async(req, res) => {
     const subject = req.subject;
     const chapter = subject.quizBank.find(value => value._id == req.params.idChapter);
     if (!chapter) {

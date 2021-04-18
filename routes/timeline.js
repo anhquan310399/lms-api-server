@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { authLecture } = require("../middlewares/auth")
 const { catchErrors } = require("../handlers/errorHandlers");
-const timelineController = require("../controllers/timelineController")
+const timelineController = require("../controllers/user/timelineController")
 
 router.post('/', authLecture, catchErrors(timelineController.create));
 router.get('/', authLecture, catchErrors(timelineController.findAll));

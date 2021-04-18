@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { authInSubject } = require("../middlewares/auth")
 const { catchErrors } = require("../handlers/errorHandlers");
-const controller = require("../controllers/topicController")
+const controller = require("../controllers/user/topicController")
 
 router.post('/', authInSubject, catchErrors(controller.create));
 router.get('/:idTopic', authInSubject, catchErrors(controller.find));

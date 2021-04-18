@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const controller = require("../controllers/examController");
+const controller = require("../controllers/user/examController");
 const { authInSubject, authLecture, authStudent } = require("../middlewares/auth")
 const { catchErrors } = require("../handlers/errorHandlers");
 /** forum */

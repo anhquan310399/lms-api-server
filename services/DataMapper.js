@@ -81,6 +81,12 @@ const getDetailTimeline = (timeline, isStudent) => {
 }
 
 const filterTimelines = async(timelines, isStudent) => {
+    if (isStudent) {
+        timelines = await Promise.all(timelines.filter(async(value) => {
+            return !value.isDeleted;
+        }));
+    }
+
     const res = _.sortBy(await Promise.all(timelines.map(async(timeline) => {
         return getDetailTimeline(timeline, isStudent);
     })), ['index']);
@@ -377,7 +383,20 @@ const getDetailMessage = async(message) => {
     }
 }
 
+const getSubjectByAdmin = async(subject) => {
+    const teacher = await User.findById(subject.idLecture,
+        'code firstName lastName urlAvatar');
+    return {
+        _id: subject._id,
+        name: subject.name,
+        lecture: teacher,
+        studentCount: subject.studentIds.length,
+        isDeleted: subject.isDeleted
+    }
+}
+
 module.exports = {
+    getSubjectByAdmin,
     getCommonData,
     getDetailTimeline,
     filterTimelines,

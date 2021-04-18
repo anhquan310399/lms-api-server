@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const Course = mongoose.model("Course");
-const { HttpNotFound } = require('../utils/errors');
+const { HttpNotFound } = require('../../utils/errors');
+
 exports.create = async(req, res) => {
     const course = new Course({
         name: req.body.name

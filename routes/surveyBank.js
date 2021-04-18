@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { authLecture } = require("../middlewares/auth");
 const { catchErrors } = require("../handlers/errorHandlers");
-const controller = require("../controllers/surveyBankController")
+const controller = require("../controllers/user/surveyBankController")
 
 router.get('/', authLecture, catchErrors(controller.findAllChapters));
 router.get('/:idChapter', authLecture, catchErrors(controller.findChapter));

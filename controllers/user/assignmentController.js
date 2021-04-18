@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
 const User = mongoose.model("User");
 const moment = require('moment');
-const { HttpNotFound, HttpUnauthorized } = require('../utils/errors');
-const { getCommonData } = require('../services/DataMapper');
-const { findTimeline, findAssignment } = require('../services/DataSearcher');
-const { sendMail } = require('../services/SendMail');
-const { MailOptions } = require('../utils/mailOptions');
+const { HttpNotFound, HttpUnauthorized } = require('../../utils/errors');
+const { getCommonData } = require('../../services/DataMapper');
+const { findTimeline, findAssignment } = require('../../services/DataSearcher');
+const { sendMail } = require('../../services/SendMail');
+const { MailOptions } = require('../../utils/mailOptions');
 
 exports.create = async(req, res) => {
     const subject = req.subject;

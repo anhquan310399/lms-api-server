@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 const User = mongoose.model("User");
 const _ = require('lodash');
 const moment = require('moment');
-const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../utils/errors');
-const { getCommonData } = require('../services/DataMapper');
-const { findTimeline, findQuizBank, findExam } = require('../services/DataSearcher');
+const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../../utils/errors');
+const { getCommonData } = require('../../services/DataMapper');
+const { findTimeline, findQuizBank, findExam } = require('../../services/DataSearcher');
 
 exports.create = async(req, res) => {
     const subject = req.subject;

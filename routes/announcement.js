@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { authInSubject, authLecture } = require("../middlewares/auth")
-const controller = require("../controllers/announcementController")
+const controller = require("../controllers/user/announcementController")
 const { catchErrors } = require("../handlers/errorHandlers");
 
 router.get('/', authInSubject, catchErrors(controller.findAll));

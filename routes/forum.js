@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { authInSubject, authLecture } = require("../middlewares/auth")
 const { catchErrors } = require("../handlers/errorHandlers");
-const controller = require("../controllers/forumController")
+const controller = require("../controllers/user/forumController")
 
 /** forum */
 router.get('/', authInSubject, catchErrors(controller.findAll));

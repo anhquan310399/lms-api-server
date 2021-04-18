@@ -1,6 +1,6 @@
-const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../utils/errors');
-const { getCommonData } = require('../services/DataMapper');
-const { findTimeline, findSurvey, findSurveyBank } = require('../services/DataSearcher');
+const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../../utils/errors');
+const { getCommonData } = require('../../services/DataMapper');
+const { findTimeline, findSurvey, findSurveyBank } = require('../../services/DataSearcher');
 
 exports.create = async(req, res) => {
     const subject = req.subject;

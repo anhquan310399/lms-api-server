@@ -1,7 +1,7 @@
-const { HttpNotFound } = require('../utils/errors');
-const { getCommonData } = require('../services/DataMapper');
-const { findTimeline, findAnnouncement } = require('../services/DataSearcher');
-exports.create = async (req, res) => {
+const { HttpNotFound } = require('../../utils/errors');
+const { getCommonData } = require('../../services/DataMapper');
+const { findTimeline, findAnnouncement } = require('../../services/DataSearcher');
+exports.create = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const announcement = {
@@ -17,7 +17,7 @@ exports.create = async (req, res) => {
     });
 };
 
-exports.find = async (req, res) => {
+exports.find = async(req, res) => {
     const subject = req.subject;
     const { announcement } = findAnnouncement(subject, req);
 
@@ -28,10 +28,10 @@ exports.find = async (req, res) => {
 
 };
 
-exports.findAll = async (req, res) => {
+exports.findAll = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
-    const announcement = await Promise.all(timeline.announcements.map(async (value) => {
+    const announcement = await Promise.all(timeline.announcements.map(async(value) => {
         return getCommonData(value);
     }));
     res.json({
@@ -40,7 +40,7 @@ exports.findAll = async (req, res) => {
     });
 };
 
-exports.update = async (req, res) => {
+exports.update = async(req, res) => {
     const subject = req.subject;
     const { announcement } = findAnnouncement(subject, req);
 
@@ -55,7 +55,7 @@ exports.update = async (req, res) => {
     });
 };
 
-exports.delete = async (req, res) => {
+exports.delete = async(req, res) => {
     const subject = req.subject;
     const { timeline, announcement } = findAnnouncement(subject, req);
     const index = timeline.announcements.indexOf(announcement);

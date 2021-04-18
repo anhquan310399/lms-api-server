@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const controller = require('../controllers/surveyController');
+const controller = require('../controllers/user/surveyController');
 const { authInSubject, authLecture, authStudent } = require("../middlewares/auth")
 const { catchErrors } = require("../handlers/errorHandlers");
 

@@ -1,7 +1,7 @@
-const { getCommonData, getCommonInfoTopic } = require('../services/DataMapper');
-const { findTimeline, findForum } = require('../services/DataSearcher');
+const { getCommonData, getCommonInfoTopic } = require('../../services/DataMapper');
+const { findTimeline, findForum } = require('../../services/DataSearcher');
 
-exports.create = async (req, res) => {
+exports.create = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const model = {
@@ -22,9 +22,9 @@ exports.create = async (req, res) => {
     });
 };
 
-exports.find = async (req, res) => {
+exports.find = async(req, res) => {
     const subject = req.subject;
-    const {forum} = findForum(subject, req);
+    const { forum } = findForum(subject, req);
     const topics = await Promise.all(forum.topics.map(async value => {
         return getCommonInfoTopic(value);
     }))
@@ -37,9 +37,9 @@ exports.find = async (req, res) => {
 
 };
 
-exports.findUpdate = async (req, res) => {
+exports.findUpdate = async(req, res) => {
     const subject = req.subject;
-    const {forum} = findForum(subject, req);
+    const { forum } = findForum(subject, req);
 
     res.json({
         success: true,
@@ -52,7 +52,7 @@ exports.findUpdate = async (req, res) => {
     })
 };
 
-exports.findAll = async (req, res) => {
+exports.findAll = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const index = subject.timelines.indexOf(timeline);
@@ -76,9 +76,9 @@ exports.findAll = async (req, res) => {
     })
 };
 
-exports.update = async (req, res) => {
+exports.update = async(req, res) => {
     const subject = req.subject;
-    const {forum} = findForum(subject, req);
+    const { forum } = findForum(subject, req);
     const data = req.body.data;
     if (data.name) {
         forum.name = data.name;
@@ -97,9 +97,9 @@ exports.update = async (req, res) => {
     });
 };
 
-exports.hideOrUnhide = async (req, res) => {
+exports.hideOrUnhide = async(req, res) => {
     const subject = req.subject;
-    const {forum} = findForum(subject, req);
+    const { forum } = findForum(subject, req);
     forum.isDeleted = !forum.isDeleted;
 
     await subject.save()
@@ -116,7 +116,7 @@ exports.hideOrUnhide = async (req, res) => {
     });
 };
 
-exports.delete = async (req, res) => {
+exports.delete = async(req, res) => {
     const subject = req.subject;
     const { timeline, forum } = findForum(subject, req);
     const index = timeline.forums.indexOf(forum);

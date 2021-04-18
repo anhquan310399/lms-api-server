@@ -15,7 +15,7 @@ exports.authStudent = (req, res, next) => {
                 }
                 const idSubject = req.params.idSubject || req.query.idSubject || req.body.idSubject;
                 if (idSubject) {
-                    const subject = await Subject.findOne({ _id: idSubject, 'studentIds': user.code });
+                    const subject = await Subject.findOne({ _id: idSubject, 'studentIds': user._id });
                     if (subject) {
                         req.subject = subject;
                         req.student = user;
@@ -52,7 +52,7 @@ exports.authLecture = (req, res, next) => {
 
                 var idSubject = req.params.idSubject || req.query.idSubject || req.body.idSubject;
 
-                const subject = await Subject.findOne({ _id: idSubject, idLecture: user.code })
+                const subject = await Subject.findOne({ _id: idSubject, idLecture: user._id })
                 if (subject) {
                     req.subject = subject;
                     req.lecture = user;
@@ -86,9 +86,9 @@ exports.authInSubject = (req, res, next) => {
 
                 let subject = null;
                 if (user.idPrivilege === "student") {
-                    subject = await Subject.findOne({ _id: idSubject, isDeleted: false, 'studentIds': user.code })
+                    subject = await Subject.findOne({ _id: idSubject, isDeleted: false, 'studentIds': user._id })
                 } else if (user.idPrivilege === "teacher") {
-                    subject = await Subject.findOne({ _id: idSubject, isDeleted: false, idLecture: user.code })
+                    subject = await Subject.findOne({ _id: idSubject, isDeleted: false, idLecture: user._id })
                 }
                 if (subject) {
                     req.user = user;
@@ -113,7 +113,29 @@ exports.authLogin = (req, res, next) => {
     try {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
-        User.findOne({ _id: data._id, code: data.code, isDeleted: false })
+        User.findOne({ _id: data._id, isDeleted: false })
+            .then((user) => {
+                if (!user) {
+                    next(new HttpUnauthorized());
+                }
+                req.user = user;
+                next();
+            })
+            .catch((err) => {
+                console.log("authLogin - Find user", error);
+                next(err);
+            });
+    } catch (error) {
+        console.log("Auth login", error);
+        next(new HttpUnauthorized());
+    }
+}
+
+exports.authUser = (req, res, next) => {
+    try {
+        const token = req.header('Authorization').replace('Bearer ', '')
+        const data = jwt.verify(token, process.env.JWT_KEY)
+        User.findOne({ _id: data._id, isDeleted: false, idPrivilege: "student" || "teacher" })
             .then((user) => {
                 if (!user) {
                     next(new HttpUnauthorized());

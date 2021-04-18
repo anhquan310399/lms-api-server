@@ -1,9 +1,9 @@
 const _ = require('lodash');
-const { HttpNotFound } = require('../utils/errors');
-const { getDetailTimeline } = require('../services/DataMapper');
-const { findTimeline } = require('../services/DataSearcher');
+const { HttpNotFound } = require('../../utils/errors');
+const { getDetailTimeline } = require('../../services/DataMapper');
+const { findTimeline } = require('../../services/DataSearcher');
 
-exports.create = async (req, res) => {
+exports.create = async(req, res) => {
     const subject = req.subject;
 
     const model = {
@@ -23,10 +23,10 @@ exports.create = async (req, res) => {
     });
 };
 
-exports.findAll = async (req, res) => {
+exports.findAll = async(req, res) => {
     const subject = req.subject;
 
-    const timelines = _.sortBy(await Promise.all(subject.timelines.map(async (value) => {
+    const timelines = _.sortBy(await Promise.all(subject.timelines.map(async(value) => {
         return {
             _id: value._id,
             name: value.name,
@@ -41,7 +41,7 @@ exports.findAll = async (req, res) => {
     });
 };
 
-exports.find = async (req, res) => {
+exports.find = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const data = getDetailTimeline(timeline);
@@ -51,7 +51,7 @@ exports.find = async (req, res) => {
     });
 };
 
-exports.update = async (req, res) => {
+exports.update = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
 
@@ -68,7 +68,7 @@ exports.update = async (req, res) => {
 
 };
 
-exports.hideOrUnHide = async (req, res) => {
+exports.hideOrUnHide = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     timeline.isDeleted = !timeline.isDeleted;
@@ -87,7 +87,7 @@ exports.hideOrUnHide = async (req, res) => {
 
 };
 
-exports.uploadFile = async (req, res) => {
+exports.uploadFile = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const file = {
@@ -108,7 +108,7 @@ exports.uploadFile = async (req, res) => {
     });
 }
 
-exports.getFile = async (req, res) => {
+exports.getFile = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const file = timeline.files.find(value => value._id == req.params.idFile);
@@ -121,7 +121,7 @@ exports.getFile = async (req, res) => {
     });
 }
 
-exports.updateFile = async (req, res) => {
+exports.updateFile = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const file = timeline.files.find(value => value._id == req.params.idFile);
@@ -142,7 +142,7 @@ exports.updateFile = async (req, res) => {
 
 }
 
-exports.removeFile = async (req, res) => {
+exports.removeFile = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const file = timeline.files.find(value => value._id == req.params.idFile);

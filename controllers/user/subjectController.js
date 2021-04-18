@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 const Subject = mongoose.model("Subject");
 const User = mongoose.model("User");
-const { HttpNotFound, HttpBadRequest } = require('../utils/errors');
-const examStatusCodes = require('../constants/examStatusCodes');
+const { HttpNotFound, HttpBadRequest } = require('../../utils/errors');
+const examStatusCodes = require('../../constants/examStatusCodes');
 const {
     filterTimelines,
     getListAssignmentAndExam,
@@ -10,51 +10,18 @@ const {
     getSurveyBankExport,
     getQuizBankExport,
     getDeadlineOfSubject,
-    getCommonData
-} = require('../services/DataMapper');
+} = require('../../services/DataMapper');
 const _ = require('lodash');
-
-exports.create = async(req, res) => {
-    const data = new Subject({
-        name: req.body.name,
-        idLecture: req.body.idLecture,
-        studentIds: req.body.studentIds,
-        timelines: req.body.timelines,
-        quizBank: req.body.quizBank,
-        surveyBank: req.body.surveyBank
-    });
-
-    const subject = await data.save();
-    const teacher = await User.findOne({ code: subject.idLecture },
-        'code firstName lastName urlAvatar');
-    res.json({
-        success: true,
-        subject: {
-            _id: subject._id,
-            name: subject.name,
-            lecture: teacher,
-            studentCount: subject.studentIds.length,
-            isDeleted: subject.isDeleted
-        },
-        message: `Create new subject ${subject.name} successfully!`
-    });
-};
 
 exports.findAll = async(req, res) => {
     const idPrivilege = req.user.idPrivilege;
     let allSubject = [];
     if (idPrivilege === 'teacher') {
-        allSubject = await Subject.find({ idLecture: req.user.code, isDeleted: false }, "name");
-    } else if (idPrivilege === 'student') {
-        const subjects = await Subject.find({ 'studentIds': req.user.code, isDeleted: false })
+        allSubject = await Subject.find({ idLecture: req.user._id, isDeleted: false }, "name");
+    } else {
+        const subjects = await Subject.find({ 'studentIds': req.user._id, isDeleted: false })
         allSubject = await Promise.all(subjects.map(async(value) => {
-            var teacher = await User.findOne({ code: value.idLecture }, 'code firstName lastName urlAvatar')
-            return { _id: value._id, name: value.name, lecture: teacher };
-        }));
-    } else if (idPrivilege === 'admin') {
-        const subjects = await Subject.find({});
-        allSubject = await Promise.all(subjects.map(async(value) => {
-            var teacher = await User.findOne({ code: value.idLecture }, 'code firstName lastName urlAvatar')
+            var teacher = await User.findOne({ _id: value.idLecture }, 'code firstName lastName urlAvatar')
             return { _id: value._id, name: value.name, lecture: teacher };
         }));
     }
@@ -69,23 +36,16 @@ exports.find = async(req, res) => {
     const subject = req.subject;
     let timelines = req.subject.timelines;
 
-    if (req.user.idPrivilege === 'student') {
-        timelines = await timelines.filter((value) => {
-            return !value.isDeleted;
-        });
-        timelines = await filterTimelines(timelines, true);
-    } else {
-        timelines = await filterTimelines(timelines, false);
-    }
+    timelines = await filterTimelines(timelines, req.user.idPrivilege === 'student' ? true : false);
 
-    const teacher = await User.findOne({ code: subject.idLecture },
+    const teacher = await User.findById(subject.idLecture,
         'code firstName lastName urlAvatar');
 
     let result = {
         _id: subject._id,
         name: subject.name,
         lecture: teacher,
-        timelines: timelines
+        timelines: timelines || []
     };
     res.json({
         success: true,
@@ -93,48 +53,8 @@ exports.find = async(req, res) => {
     });
 };
 
-exports.findByAdmin = async(req, res) => {
-    const subject = await Subject.findById(req.params.idSubject);
-    if (!subject) {
-        throw new HttpNotFound("Not found subject");
-    }
-    var teacher = await User.findOne({ code: subject.idLecture },
-        'code firstName lastName urlAvatar');
-    res.json({
-        success: true,
-        subject: {
-            _id: subject._id,
-            name: subject.name,
-            lecture: teacher,
-            studentCount: subject.studentIds.length,
-            isDeleted: subject.isDeleted
-        }
-    });
-}
-
-exports.update = async(req, res) => {
-    const subject = await Subject.findById(req.params.idSubject);
-    if (!subject) {
-        throw new HttpNotFound("Not found subject");
-    }
-
-    subject.name = req.body.name || subject.name;
-    subject.idLecture = req.body.idLecture || subject.idLecture;
-    subject.studentIds = req.body.studentIds || subject.studentIds;
-    subject.timelines = req.body.timelines || subject.timelines;
-    subject.surveyBank = req.body.surveyBank || subject.surveyBank;
-    subject.quizBank = req.body.quizBank || subject.quizBank;
-
-    await subject.save();
-
-    res.json({
-        success: true,
-        message: "Update Subject Successfully"
-    });
-};
-
 exports.importSubject = async(req, res) => {
-    let subject = req.subject;
+    const subject = req.subject;
 
     if (req.body.timelines) {
         if (subject.timelines.length === 0) {
@@ -156,7 +76,7 @@ exports.importSubject = async(req, res) => {
 
     await subject.save();
 
-    const timelines = await filterTimelines(subject.timelines, false);
+    const timelines = await filterTimelines(subject.timelines);
 
     const surveyBank = await Promise.all(subject.surveyBank.map(value => {
         return {
@@ -178,38 +98,6 @@ exports.importSubject = async(req, res) => {
         timelines: timelines,
         surveyBank: surveyBank,
         quizBank: quizBank
-    });
-};
-
-exports.delete = async(req, res) => {
-    const data = await Subject.findByIdAndDelete(req.params.idSubject)
-    if (!data) {
-        throw new HttpNotFound("Not found subject");
-    }
-    res.json({
-        success: true,
-        message: `Delete Subject ${data.name} Successfully`
-    });
-
-};
-
-exports.hideOrUnhide = async(req, res) => {
-    const subject = await Subject.findById(req.params.idSubject)
-    if (!subject) {
-        throw new HttpNotFound("Not found subject");
-    }
-    subject.isDeleted = !subject.isDeleted;
-    await subject.save()
-    let message;
-    if (subject.isDeleted) {
-        message = `Lock subject: ${subject.name} successfully!`;
-    } else {
-        message = `Unlock subject : ${subject.name} successfully!`;
-    }
-    res.json({
-        success: true,
-        message: message,
-        subject: getCommonData(subject)
     });
 };
 
@@ -327,7 +215,6 @@ exports.getListStudent = async(req, res) => {
         students: info
     });
 }
-
 
 exports.getSubjectTranscript = async(req, res) => {
     let subject = req.subject;

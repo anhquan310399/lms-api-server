@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 const User = mongoose.model("User");
-const { HttpNotFound, HttpUnauthorized } = require('../utils/errors');
-const { getCommonInfoTopic, getDetailComment } = require('../services/DataMapper');
-const { findForum, findTopic } = require('../services/DataSearcher');
+const { HttpNotFound, HttpUnauthorized } = require('../../utils/errors');
+const { getCommonInfoTopic, getDetailComment } = require('../../services/DataMapper');
+const { findForum, findTopic } = require('../../services/DataSearcher');
 exports.create = async(req, res) => {
     const subject = req.subject;
     const forum = findForum(subject, req);

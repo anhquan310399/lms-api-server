@@ -1,3 +1,5 @@
+'use-strict';
+
 require("dotenv").config();
 
 const mongoose = require("mongoose");
@@ -19,6 +21,7 @@ require("./models/Privilege");
 require("./models/User");
 require("./models/ChatRoom");
 require("./models/Message");
+require("./models/Course");
 require("./models/Subject");
 
 const app = require("./app");
@@ -31,7 +34,7 @@ const io = require("socket.io")(server, { cors: { origin: '*' } });
 const jwt = require("jsonwebtoken");
 
 const Message = mongoose.model("Message");
-const { getDetailMessage } = require('./services/DataMapper')
+const { getDetailMessage } = require('./services/DataMapper');
 
 io.use((socket, next) => {
     try {
@@ -45,31 +48,53 @@ io.use((socket, next) => {
 });
 
 io.on("connection", (socket) => {
-    console.log("Connected: " + socket.idUser);
+    // console.log("Connected: " + socket.idUser);
+    // socket.on("disconnect", () => {
+    //     console.log("Disconnected: " + socket.idUser);
+    // });
 
-    socket.on("disconnect", () => {
-        console.log("Disconnected: " + socket.idUser);
-    });
-
-    socket.on("joinRoom", ({ chatroomId }) => {
+    socket.on("join-chat", ({ chatroomId }) => {
         socket.join(chatroomId);
         console.log("A user joined chatroom: " + chatroomId);
+
+        socket.on("leave", () => {
+            socket.leave(chatroomId);
+            console.log("A user left chatroom: " + chatroomId);
+        });
+
+        socket.on("message", async({ message }) => {
+            if (message.trim().length > 0) {
+                const newMessage = new Message({
+                    idChatroom: chatroomId,
+                    idUser: socket.idUser,
+                    message,
+                });
+                io.to(chatroomId).emit("newMessage", await getDetailMessage(newMessage));
+                await newMessage.save();
+            }
+        });
     });
 
-    socket.on("leaveRoom", ({ chatroomId }) => {
-        socket.leave(chatroomId);
-        console.log("A user left chatroom: " + chatroomId);
-    });
+    socket.on('join-zoom', (zoomId, peerId) => {
+        socket.join(zoomId)
+        socket.to(zoomId).emit('user-connected', peerId)
 
-    socket.on("chatroomMessage", async({ chatroomId, message }) => {
-        if (message.trim().length > 0) {
-            const newMessage = new Message({
-                idChatroom: chatroomId,
+        socket.on('message', async(message) => {
+            message = {
                 idUser: socket.idUser,
-                message,
-            });
-            io.to(chatroomId).emit("newMessage", await getDetailMessage(newMessage));
-            await newMessage.save();
-        }
-    });
+                message
+            }
+            io.to(zoomId).emit('createMessage', await getDetailMessage(message))
+        })
+        socket.on('leave', () => {
+            console.log("A user left zoom: " + peerId);
+            socket.to(zoomId).emit('user-disconnected', peerId);
+            socket.leave(zoomId);
+        })
+        socket.on('disconnect', () => {
+            console.log("A user left zoom: " + peerId);
+            socket.to(zoomId).emit('user-disconnected', peerId);
+            socket.leave(zoomId);
+        })
+    })
 });

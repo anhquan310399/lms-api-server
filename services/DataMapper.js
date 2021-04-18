@@ -278,16 +278,17 @@ const getDeadlineOfSubject = (subject, student) => {
     subject.timelines.forEach((timeline) => {
         if (!timeline.isDeleted) {
             let exams = timeline.exams.reduce((preExams, currentExam) => {
-                if (currentExam.expireTime.getTime() < today || currentExam.isDeleted) {
+                if (currentExam.setting.expireTime.getTime() < today || currentExam.isDeleted) {
                     return preExams;
                 }
                 var submission = currentExam.submissions.find(value => value.idStudent == student._id)
                 let exam = {
+                    idSubject: subject._id,
                     idTimeline: timeline._id,
                     _id: currentExam._id,
                     name: currentExam.name,
-                    expireTime: currentExam.expireTime,
-                    timeRemain: (new Date(currentExam.expireTime - today)).getTime(),
+                    expireTime: currentExam.setting.expireTime,
+                    timeRemain: (new Date(currentExam.setting.expireTime - today)).getTime(),
                     isSubmit: submission ? true : false,
                     type: 'exam'
                 }
@@ -299,6 +300,7 @@ const getDeadlineOfSubject = (subject, student) => {
                 }
                 let submission = currentAssignment.submissions.find(value => value.idStudent == student._id);
                 let assignment = {
+                    idSubject: subject._id,
                     idTimeline: timeline._id,
                     _id: currentAssignment._id,
                     name: currentAssignment.name,
@@ -316,6 +318,7 @@ const getDeadlineOfSubject = (subject, student) => {
                 }
                 let reply = currentSurvey.responses.find(value => value.idStudent == student._id);
                 let survey = {
+                    idSubject: subject._id,
                     idTimeline: timeline._id,
                     _id: currentSurvey._id,
                     name: currentSurvey.name,

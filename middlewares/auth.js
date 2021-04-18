@@ -13,16 +13,21 @@ exports.authStudent = (req, res, next) => {
                 if (!user) {
                     next(new HttpUnauthorized());
                 }
-                var idSubject = req.params.idSubject || req.query.idSubject || req.body.idSubject;
-
-                const subject = await Subject.findOne({ _id: idSubject, 'studentIds': user.code });
-                if (subject) {
-                    req.subject = subject;
+                const idSubject = req.params.idSubject || req.query.idSubject || req.body.idSubject;
+                if (idSubject) {
+                    const subject = await Subject.findOne({ _id: idSubject, 'studentIds': user.code });
+                    if (subject) {
+                        req.subject = subject;
+                        req.student = user;
+                        req.idPrivilege = user.idPrivilege;
+                        next();
+                    } else {
+                        next(new HttpNotFound({ message: "Not found subject that you enroll" }));
+                    }
+                } else {
                     req.student = user;
                     req.idPrivilege = user.idPrivilege;
                     next();
-                } else {
-                    next(new HttpNotFound({ message: "Not found subject that you enroll" }));
                 }
             })
             .catch((err) => {

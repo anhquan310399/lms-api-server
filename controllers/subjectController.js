@@ -9,7 +9,8 @@ const {
     getTimelineExport,
     getSurveyBankExport,
     getQuizBankExport,
-    getDeadlineOfSubject
+    getDeadlineOfSubject,
+    getCommonData
 } = require('../services/DataMapper');
 const _ = require('lodash');
 
@@ -208,6 +209,7 @@ exports.hideOrUnhide = async(req, res) => {
     res.json({
         success: true,
         message: message,
+        subject: getCommonData(subject)
     });
 };
 
@@ -334,12 +336,12 @@ exports.getSubjectTranscript = async(req, res) => {
 
     if (req.user.idPrivilege === 'student') {
         let transcript = await Promise.all(fields.map(async(field) => {
-            let submission = await field.submissions.find(value => value.idStudent == req.user._id);
+            let submission = await field.submissions.find(value => value.idStudent.equals(req.user._id));
             let grade = 0;
             let status;
             if (field.type === 'exam') {
                 if (submission || (!submission && !field.isRemain)) {
-                    grade = submission.grade || 0;
+                    grade = submission ? submission.grade : 0;
                     status = examStatusCodes.COMPLETED;
                 } else {
                     grade = null;
@@ -373,9 +375,9 @@ exports.getSubjectTranscript = async(req, res) => {
         let transcript = await Promise.all(fields.map(async(field) => {
             let submissions = await Promise.all(subject.studentIds.map(
                 async(value) => {
-                    let student = await User.findOne({ code: value }, 'code firstName lastName urlAvatar');
+                    const student = await User.findOne({ code: value }, 'code firstName lastName urlAvatar');
 
-                    let submission = field.submissions.find(value => value.idStudent == student._id);
+                    let submission = field.submissions.find(value => value.idStudent.equals(student._id));
                     let isRemain = field.isRemain;
 
                     if (submission) {
@@ -447,7 +449,7 @@ exports.getSubjectTranscriptTotal = async(req, res) => {
 
     let data = await Promise.all(subject.studentIds.map(
         async(value) => {
-            let student = await User.findOne({ code: value }, 'code firstName lastName urlAvatar')
+            const student = await User.findOne({ code: value }, 'code firstName lastName urlAvatar')
                 .then(value => { return value });
             let data = {
                 'c0': student.code,
@@ -456,7 +458,7 @@ exports.getSubjectTranscriptTotal = async(req, res) => {
             };
             let count = 3;
             let grade = await Promise.all(assignmentOrExam.map(async(value) => {
-                let submission = value.submissions.find(value => value.idStudent == student._id);
+                let submission = value.submissions.find(value => value.idStudent.equals(student._id));
                 if (submission) {
                     return submission.grade;
                 } else if (value.isRemain) {
@@ -561,10 +563,10 @@ exports.exportSubjectWithCondition = async(req, res) => {
 }
 
 exports.getDeadline = async(req, res) => {
-    const listSubject = await Subject.find({ 'studentIds': req.student.code, isDeleted: false });
+    const listSubject = await Subject.find({ 'studentIds': req.user.code, isDeleted: false });
     let deadline = [];
     listSubject.forEach(subject => {
-        deadline = deadline.concat(getDeadlineOfSubject(subject, req.student));
+        deadline = deadline.concat(getDeadlineOfSubject(subject, req.user));
     });
 
     res.json({

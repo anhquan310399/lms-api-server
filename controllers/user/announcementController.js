@@ -1,4 +1,3 @@
-const { HttpNotFound } = require('../../utils/errors');
 const { getCommonData } = require('../../services/DataMapper');
 const { findTimeline, findAnnouncement } = require('../../services/DataSearcher');
 exports.create = async(req, res) => {

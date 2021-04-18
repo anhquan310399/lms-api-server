@@ -10,7 +10,7 @@ const getCommonData = (object, isStudent) => {
         description: object.description || undefined,
         content: object.content || undefined,
         time: object.createdAt,
-        isNew: isToday(object.createdAt),
+        isNew: isToday(object.createdAt || object.uploadDay),
         isDeleted: isStudent ? undefined : object.isDeleted
     }
 }
@@ -82,9 +82,9 @@ const getDetailTimeline = (timeline, isStudent) => {
 
 const filterTimelines = async(timelines, isStudent) => {
     if (isStudent) {
-        timelines = await Promise.all(timelines.filter(async(value) => {
+        timelines = timelines.filter((value) => {
             return !value.isDeleted;
-        }));
+        });
     }
 
     const res = _.sortBy(await Promise.all(timelines.map(async(timeline) => {
@@ -94,7 +94,7 @@ const filterTimelines = async(timelines, isStudent) => {
 }
 
 const getListAssignmentAndExam = async(subject, today) => {
-    let assignmentOrExam = await Promise.all(subject.timelines.reduce(
+    let assignmentOrExam = await (subject.timelines.reduce(
         async(preField, currentTimeline) => {
             if (currentTimeline.isDeleted) {
                 let result = await preField;
@@ -135,12 +135,13 @@ const getListAssignmentAndExam = async(subject, today) => {
                         type: 'exam',
                     }
                 }));
+
                 let assignments = await Promise.all(currentTimeline.assignments.map(async(assignment) => {
                     if (assignment.isDeleted) {
                         return null;
                     }
 
-                    let submissions = await Promise.all(assignment.submissions.map(async(submission) => {
+                    const submissions = await Promise.all(assignment.submissions.map(async(submission) => {
                         return {
                             // _id: submission._id,
                             idStudent: submission.idStudent,
@@ -162,11 +163,10 @@ const getListAssignmentAndExam = async(subject, today) => {
                     }
                 }));
                 let currentFields = exams.concat(assignments);
-                let result = await preField;
-                return result.concat(currentFields);
+                let result = (await preField).concat(currentFields);
+                return result;
             }
         }, []));
-
     assignmentOrExam = assignmentOrExam.filter((value) => {
         return (value !== null);
     });
@@ -288,7 +288,7 @@ const getDeadlineOfSubject = (subject, student) => {
                 if (currentExam.setting.expireTime.getTime() < today || currentExam.isDeleted) {
                     return preExams;
                 }
-                var submission = currentExam.submissions.find(value => value.idStudent == student._id)
+                var submission = currentExam.submissions.find(value => value.idStudent.equals(student._id))
                 let exam = {
                     idSubject: subject._id,
                     idTimeline: timeline._id,
@@ -305,7 +305,7 @@ const getDeadlineOfSubject = (subject, student) => {
                 if (currentAssignment.setting.expireTime.getTime() < today || currentAssignment.isDeleted) {
                     return preAssignments;
                 }
-                let submission = currentAssignment.submissions.find(value => value.idStudent == student._id);
+                let submission = currentAssignment.submissions.find(value => value.idStudent.equals(student._id));
                 let assignment = {
                     idSubject: subject._id,
                     idTimeline: timeline._id,
@@ -323,7 +323,7 @@ const getDeadlineOfSubject = (subject, student) => {
                 if (currentSurvey.expireTime.getTime() < today || currentSurvey.isDeleted) {
                     return preSurveys;
                 }
-                let reply = currentSurvey.responses.find(value => value.idStudent == student._id);
+                let reply = currentSurvey.responses.find(value => value.idStudent.equals(student._id));
                 let survey = {
                     idSubject: subject._id,
                     idTimeline: timeline._id,

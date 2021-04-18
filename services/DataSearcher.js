@@ -72,7 +72,7 @@ const findSurvey = (subject, req) => {
     const id = req.query.idSurvey || req.params.idSurvey || req.body.idSurvey
     const survey = timeline.surveys.find(value => value._id.equals(id));
     if (!survey || (req.idPrivilege === 'student' && survey.isDeleted === true)) {
-        throw new HttpNotFound("Not found exam");
+        throw new HttpNotFound("Not found survey");
     }
     return { timeline, survey };
 }

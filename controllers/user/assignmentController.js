@@ -36,12 +36,12 @@ exports.create = async(req, res) => {
 exports.find = async(req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
-    let today = new Date();
+    const today = new Date();
     const timingRemain = moment(assignment.setting.expireTime).from(moment(today));
 
     if (req.user.idPrivilege === 'student') {
-        let submission = await assignment.submissions.find(value => value.idStudent == req.user._id);
-        console.log(submission);
+        const submission = await assignment.submissions.find(value => value.idStudent.equals(req.user._id));
+
         let isCanSubmit = false;
         if (today >= assignment.setting.startTime && today < assignment.setting.expireTime) {
             isCanSubmit = true;

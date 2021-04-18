@@ -9,7 +9,7 @@ router.get('/:idTimeline', authLectureInSubject, catchErrors(timelineController.
 router.put('/:idTimeline/', authLectureInSubject, catchErrors(timelineController.update));
 router.put('/:idTimeline/hide', authLectureInSubject, catchErrors(timelineController.hideOrUnHide));
 
-router.post('/upload', authLectureInSubject, catchErrors(timelineController.uploadFile));
+router.post('/:idTimeline/upload', authLectureInSubject, catchErrors(timelineController.uploadFile));
 router.delete('/:idTimeline/remove/:idFile', authLectureInSubject, catchErrors(timelineController.removeFile));
 router.get('/:idTimeline/files/:idFile', authLectureInSubject, catchErrors(timelineController.getFile));
 router.put('/:idTimeline/files/:idFile', authLectureInSubject, catchErrors(timelineController.updateFile));

@@ -368,12 +368,12 @@ exports.denyExitRequest = async(req, res) => {
 exports.getListStudent = async(req, res) => {
     const subject = req.subject;
 
-    const students = await Promise.all(subject.studentIds.map(async function(value) {
+    const students = _.sortBy(await Promise.all(subject.studentIds.map(async function(value) {
         const student = await User.findById(value,
             'code emailAddress firstName lastName urlAvatar');
 
         return student;
-    }));
+    })), ['code']);
     res.json({
         success: true,
         students
@@ -478,9 +478,9 @@ exports.adjustOrderOfTimeline = async(req, res) => {
 
 // Score in subject
 exports.getSubjectTranscript = async(req, res) => {
-    let subject = req.subject;
-    let today = new Date();
-    let fields = await getListAssignmentAndExam(subject, today);
+    const subject = req.subject;
+    const today = new Date();
+    const fields = await getListAssignmentAndExam(subject, today);
     if (req.user.idPrivilege === 'student') {
         let transcript = await Promise.all(fields.map(async(field) => {
             let submission = await field.submissions.find(value => value.idStudent.equals(req.user._id));
@@ -766,10 +766,10 @@ exports.exportSubjectWithCondition = async(req, res) => {
 
 //Get Deadline
 exports.getDeadline = async(req, res) => {
-    const listSubject = await Subject.find({ 'studentIds': req.user.code, isDeleted: false });
+    const listSubject = await Subject.find({ 'studentIds': req.student._id, isDeleted: false });
     let deadline = [];
     listSubject.forEach(subject => {
-        deadline = deadline.concat(getDeadlineOfSubject(subject, req.user));
+        deadline = deadline.concat(getDeadlineOfSubject(subject, req.student));
     });
 
     res.json({

@@ -307,7 +307,7 @@ exports.attemptExam = async(req, res) => {
     const setting = exam.setting;
     if (today >= setting.startTime && today < setting.expireTime) {
         const submissions = exam.submissions.filter(value => value.idStudent.equals(req.student._id));
-        const attempt = submissions.length;
+        let attempt = submissions.length;
         if (attempt > 0) {
             const submission = submissions[attempt - 1];
             if (!submission.isSubmitted) {
@@ -347,10 +347,10 @@ exports.attemptExam = async(req, res) => {
                 }),
                 startTime: new Date()
             }
-            exam.submissions.push(submit);
+            const index = exam.submissions.push(submit) - 1;
             await subject.save();
             res.json({
-                idSubmission: submit._id
+                idSubmission: exam.submissions[index]._id
             });
         }
     } else {
@@ -361,7 +361,6 @@ exports.attemptExam = async(req, res) => {
         }
     }
 }
-
 
 const checkSubmission = async(subject, exam, idSubmission, idStudent) => {
     const submission =

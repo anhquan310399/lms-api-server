@@ -30,7 +30,7 @@ const config = new mongoose.Schema({
         type: Boolean,
         default: false
     }
-})
+}, { _id: false })
 
 const Schema = mongoose.Schema({
     name: {
@@ -102,6 +102,11 @@ const Schema = mongoose.Schema({
         }
     },
     enrollRequests: {
+        type: [mongoose.Schema.Types.ObjectId],
+        ref: 'User',
+        default: []
+    },
+    exitRequests: {
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'User',
         default: []

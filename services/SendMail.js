@@ -1,7 +1,9 @@
 const nodemailer = require('nodemailer');
+const smtpTransport = require('nodemailer-smtp-transport');
 const mongoose = require("mongoose");
 const User = mongoose.model("User");
-const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport(smtpTransport({
+    service: 'gmail',
     host: 'smtp.gmail.com',
     port: 465,
     secure: true,
@@ -9,7 +11,7 @@ const transporter = nodemailer.createTransport({
         user: process.env.GM_USERNAME,
         pass: process.env.GM_PASSWORD
     }
-});
+}));
 
 const sendMail = (mailOptions) => {
     User.findOne({ emailAddress: mailOptions.to },

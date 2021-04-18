@@ -20,7 +20,6 @@ app.use("/quiz-bank", require("./routes/quizBank"));
 app.use("/survey-bank", require("./routes/surveyBank"));
 app.use("/exam", require("./routes/exam"));
 app.use("/survey", require("./routes/survey"));
-app.use("/zoom", require("./routes/zoom"));
 
 //Setup Error Handlers
 const errorHandlers = require("./handlers/errorHandlers");

@@ -1,5 +1,5 @@
 class MailOptions {
-    constructor({ to, subject, text, html }) {
+    constructor({ to, subject = "no reply this mail", text, html }) {
         this.from = process.env.GM_USERNAME;
         this.to = to;
         this.subject = subject;

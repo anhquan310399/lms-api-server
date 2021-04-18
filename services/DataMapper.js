@@ -94,7 +94,7 @@ const filterTimelines = async(timelines, isStudent) => {
 }
 
 const getListAssignmentAndExam = async(subject, today) => {
-    let assignmentOrExam = await subject.timelines.reduce(
+    let assignmentOrExam = await Promise.all(subject.timelines.reduce(
         async(preField, currentTimeline) => {
             if (currentTimeline.isDeleted) {
                 let result = await preField;
@@ -106,7 +106,7 @@ const getListAssignmentAndExam = async(subject, today) => {
                     }
                     let exists = [];
                     let submissions = await exam.submissions.reduce(function(prePromise, submission) {
-                        let exist = exists.find(value => value.idStudent == submission.idStudent);
+                        let exist = exists.find(value => value.idStudent.equals(submission.idStudent));
                         if (exist) {
                             let existSubmission = prePromise[exist.index];
                             prePromise[exist.index].grade = existSubmission.grade >= submission.grade ? existSubmission.grade : submission.grade;
@@ -165,10 +165,11 @@ const getListAssignmentAndExam = async(subject, today) => {
                 let result = await preField;
                 return result.concat(currentFields);
             }
-        }, []);
-    assignmentOrExam = await (assignmentOrExam.filter((value) => {
+        }, []));
+
+    assignmentOrExam = assignmentOrExam.filter((value) => {
         return (value !== null);
-    }));
+    });
 
     return assignmentOrExam;
 }

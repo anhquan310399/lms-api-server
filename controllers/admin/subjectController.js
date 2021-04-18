@@ -5,18 +5,15 @@ const { getSubjectByAdmin } = require('../../services/DataMapper');
 const _ = require('lodash');
 
 exports.create = async(req, res) => {
-    const data = new Subject({
+    const subject = new Subject({
         name: req.body.name,
         idCourse: req.body.idCourse,
         config: req.body.config,
         idLecture: req.body.idLecture,
-        studentIds: req.body.studentIds,
-        timelines: req.body.timelines,
-        quizBank: req.body.quizBank,
-        surveyBank: req.body.surveyBank
+        studentIds: req.body.studentIds
     });
 
-    const subject = await data.save();
+    await subject.save();
 
     res.json({
         success: true,

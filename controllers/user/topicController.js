@@ -3,6 +3,8 @@ const User = mongoose.model("User");
 const { HttpNotFound, HttpUnauthorized } = require('../../utils/errors');
 const { getCommonInfoTopic, getDetailComment } = require('../../services/DataMapper');
 const { findForum, findTopic } = require('../../services/DataSearcher');
+const DETAILS = require("../../constants/AccountDetail");
+
 exports.create = async(req, res) => {
     const subject = req.subject;
     const forum = findForum(subject, req);
@@ -29,7 +31,7 @@ exports.find = async(req, res) => {
         return getDetailComment(value);
     }));
 
-    const creator = await User.findById(topic.idUser, 'code firstName lastName urlAvatar')
+    const creator = await User.findById(topic.idUser, DETAILS.COMMON)
 
     res.json({
         success: true,
@@ -47,7 +49,7 @@ exports.find = async(req, res) => {
 exports.update = async(req, res) => {
     const subject = req.subject;
     const { topic } = findTopic(subject, req);
-    if (topic.idUser.toString() != req.user._id.toString()) {
+    if (!topic.idUser.equals(req.user._id)) {
         throw new HttpUnauthorized("You isn't the topic creator. You can't change this topic!");
     }
     topic.name = req.body.data.name;
@@ -64,7 +66,7 @@ exports.delete = async(req, res) => {
     const subject = req.subject
     const { forum, topic } = findTopic(subject, req);
 
-    if (topic.idUser.toString() != req.user._id.toString()) {
+    if (!topic.idUser.equals(req.user._id)) {
         throw new HttpUnauthorized("You isn't the topic creator. You can't delete this topic!");
     }
 
@@ -102,11 +104,11 @@ exports.discuss = async(req, res) => {
 exports.updateDiscussion = async(req, res) => {
     const subject = req.subject
     const { topic } = findTopic(subject, req);
-    const discussion = topic.discussions.find(value => value._id == req.params.idDiscussion);
+    const discussion = topic.discussions.find(value => value._id.equals(req.params.idDiscussion));
     if (!discussion) {
         throw new HttpNotFound("Not found discussion");
     }
-    if (discussion.idUser.toString() != req.user._id.toString()) {
+    if (!discussion.idUser.equals(req.user._id)) {
         throw new HttpUnauthorized("You isn't the discussion creator. You can't change this discussion!");
     }
     discussion.content = req.body.data.content;
@@ -121,11 +123,11 @@ exports.updateDiscussion = async(req, res) => {
 exports.deleteDiscussion = async(req, res) => {
     const subject = req.subject;
     const { topic } = findTopic(subject, req);
-    const discussion = topic.discussions.find(value => value._id == req.params.idDiscussion);
+    const discussion = topic.discussions.find(value => value._id.equals(req.params.idDiscussion));
     if (!discussion) {
         throw new HttpNotFound("Not found discussion");
     }
-    if (discussion.idUser.toString() != req.user._id.toString()) {
+    if (!discussion.idUser.equals(req.user._id)) {
         throw new HttpUnauthorized("You isn't the discussion creator. You can't delete this discussion!");
     }
     const index = topic.discussions.indexOf(discussion);

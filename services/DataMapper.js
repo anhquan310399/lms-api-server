@@ -2,6 +2,7 @@ const isToday = require('../common/isToday');
 const _ = require('lodash');
 const mongoose = require("mongoose");
 const User = mongoose.model("User");
+const DETAILS = require('../constants/AccountDetail');
 
 const getCommonData = (object, isStudent) => {
     return {
@@ -344,7 +345,7 @@ const getDeadlineOfSubject = (subject, student) => {
 }
 
 const getCommonInfoTopic = async(topic) => {
-    const creator = await User.findById(topic.idUser, 'code firstName lastName urlAvatar');
+    const creator = await User.findById(topic.idUser, DETAILS.COMMON);
     return {
         _id: topic._id,
         name: topic.name,
@@ -357,7 +358,7 @@ const getCommonInfoTopic = async(topic) => {
 }
 
 const getDetailComment = async(comment) => {
-    let creator = await User.findById(comment.idUser, 'code firstName lastName urlAvatar')
+    let creator = await User.findById(comment.idUser, DETAILS.COMMON)
     return {
         _id: comment._id,
         content: comment.content,
@@ -376,7 +377,7 @@ const getInfoQuestionBank = (bank) => {
 }
 
 const getDetailMessage = async(message) => {
-    let user = await User.findById(message.idUser, 'code emailAddress firstName lastName urlAvatar')
+    let user = await User.findById(message.idUser, DETAILS.COMMON)
     return {
         _id: message._id,
         user,
@@ -385,8 +386,7 @@ const getDetailMessage = async(message) => {
 }
 
 const getSubjectByAdmin = async(subject) => {
-    const teacher = await User.findById(subject.idLecture,
-        'code firstName lastName urlAvatar');
+    const teacher = await User.findById(subject.idLecture, DETAILS.COMMON);
     return {
         _id: subject._id,
         name: subject.name,

@@ -17,7 +17,7 @@ exports.createChapter = async(req, res) => {
 
 exports.findChapter = async(req, res) => {
     const subject = req.subject;
-    const chapter = subject.surveyBank.find(value => value._id == req.params.idChapter);
+    const chapter = subject.surveyBank.find(value => value._id.equals(req.params.idChapter));
     if (!chapter) {
         throw new HttpNotFound("Not found questionnaire");
     }
@@ -40,7 +40,7 @@ exports.findAllChapters = async(req, res) => {
 
 exports.updateChapter = async(req, res) => {
     const subject = req.subject;
-    const chapter = subject.surveyBank.find(value => value._id == req.params.idChapter);
+    const chapter = subject.surveyBank.find(value => value._id.equals(req.params.idChapter));
     if (!chapter) {
         throw new HttpNotFound("Not found questionnaire");
     }
@@ -58,7 +58,7 @@ exports.updateChapter = async(req, res) => {
 
 exports.deleteChapter = async(req, res) => {
     const subject = req.subject;
-    const chapter = subject.surveyBank.find(value => value._id == req.params.idChapter);
+    const chapter = subject.surveyBank.find(value => value._id.equals(req.params.idChapter));
     if (!chapter) {
         throw new HttpNotFound("Not found questionnaire");
     }

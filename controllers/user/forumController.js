@@ -1,5 +1,6 @@
 const { getCommonData, getCommonInfoTopic } = require('../../services/DataMapper');
 const { findTimeline, findForum } = require('../../services/DataSearcher');
+const PRIVILEGES = require("../../constants/PrivilegeCode");
 
 exports.create = async(req, res) => {
     const subject = req.subject;
@@ -60,12 +61,12 @@ exports.findAll = async(req, res) => {
     let forums = subject.timelines[index].forums;
 
     forums = forums.reduce((res, value) => {
-        if (!(value.isDeleted && req.user.idPrivilege === 'student')) {
+        if (!(value.isDeleted && req.user.idPrivilege === PRIVILEGES.STUDENT)) {
             res.push({
                 _id: value._id,
                 name: value.name,
                 description: value.description,
-                isDeleted: req.user.idPrivilege === 'student' ? undefined : value.isDeleted
+                isDeleted: req.user.idPrivilege === PRIVILEGES.STUDENT ? undefined : value.isDeleted
             })
         }
         return res;
@@ -103,15 +104,10 @@ exports.hideOrUnhide = async(req, res) => {
     forum.isDeleted = !forum.isDeleted;
 
     await subject.save()
-    let message;
-    if (forum.isDeleted) {
-        message = `Hide forum ${forum.name} successfully!`;
-    } else {
-        message = `Unhide forum ${forum.name} successfully!`;
-    }
+
     res.send({
         success: true,
-        message: message,
+        message: `${forum.isDeleted?"Hide":"Unhide"} forum ${forum.name} successfully!`,
         forum: getCommonData(forum)
     });
 };

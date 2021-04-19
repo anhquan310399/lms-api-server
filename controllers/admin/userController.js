@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const User = mongoose.model("User");
 const { HttpNotFound } = require('../../utils/errors');
+const DETAILS = require('../../constants/AccountDetail');
+const PRIVILEGES = require('../../constants/PrivilegeCode');
 
 exports.create = async(req, res) => {
     const user = new User({
@@ -8,7 +10,8 @@ exports.create = async(req, res) => {
         idPrivilege: req.body.idPrivilege,
         emailAddress: req.body.emailAddress,
         firstName: req.body.firstName,
-        lastName: req.body.lastName
+        lastName: req.body.lastName,
+        status: req.body.status
     });
     const data = await user.save();
 
@@ -21,20 +24,20 @@ exports.findAll = async(req, res) => {
 };
 
 exports.findAllStudents = async(req, res) => {
-    const students = await User.find({ idPrivilege: 'student' },
-        'code emailAddress idPrivilege firstName lastName urlAvatar isDeleted');
+    const students = await User.find({ idPrivilege: PRIVILEGES.STUDENT },
+        DETAILS.CONFIG_ADMIN);
     res.json(students);
 };
 
 exports.findAllTeachers = async(req, res) => {
-    const teachers = await User.find({ idPrivilege: 'teacher' },
-        'code emailAddress idPrivilege firstName lastName urlAvatar isDeleted');
+    const teachers = await User.find({ idPrivilege: PRIVILEGES.TEACHER },
+        DETAILS.CONFIG_ADMIN);
     res.json(teachers);
 };
 
 exports.findUser = async(req, res) => {
     const user = await User.findOne({ code: req.params.code },
-        'code emailAddress firstName lastName urlAvatar');
+        DETAILS.CONFIG_ADMIN);
     res.json(user);
 };
 

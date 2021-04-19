@@ -5,6 +5,8 @@ const moment = require('moment');
 const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../../utils/errors');
 const { getCommonData } = require('../../services/DataMapper');
 const { findTimeline, findQuizBank, findExam } = require('../../services/DataSearcher');
+const DETAILS = require("../../constants/AccountDetail");
+const PRIVILEGES = require("../../constants/PrivilegeCode");
 
 exports.create = async(req, res) => {
     const subject = req.subject;
@@ -50,7 +52,7 @@ exports.find = async(req, res) => {
     const isOpen = (today >= setting.startTime && today <= setting.expireTime)
     const timingRemain = moment(setting.expireTime).from(moment(today));
 
-    if (req.user.idPrivilege === 'student') {
+    if (req.user.idPrivilege === PRIVILEGES.STUDENT) {
         let submissions = exam.submissions.filter(value => value.idStudent.equals(req.user._id));
         let isContinue = false;
         let time = 1;
@@ -107,9 +109,9 @@ exports.find = async(req, res) => {
         })
     } else {
         let key = 0;
-        const submissions = await Promise.all(subject.studentIds.map(
-            async(value) => {
-                const student = await User.findOne({ code: value }, 'code firstName lastName urlAvatar');
+        const submissions = await Promise.all(
+            subject.studentIds.map(async(idStudent) => {
+                const student = await User.findById(idStudent, DETAILS.COMMON);
                 const submissions = exam.submissions.filter(value => value.idStudent.equals(student._id));
                 if (submissions && submissions.length > 0) {
                     const { _id, grade } = submissions.reduce((previous, current) => {
@@ -131,8 +133,7 @@ exports.find = async(req, res) => {
                         attemptCount: 0
                     }
                 }
-            }
-        ));
+            }));
 
         res.json({
             success: true,
@@ -251,9 +252,7 @@ exports.submitExam = async(req, res) => {
     const { submission, totalTime } = await checkSubmission(subject, exam, req.params.idSubmission, req.student._id);
     const data = req.body.data;
     submission.answers = submission.answers.map(value => {
-        let answer = data.find(answer => {
-            return answer.idQuestion == value.idQuestion;
-        });
+        let answer = data.find(answer => answer.idQuestion.equals(value.idQuestion));
         let idAnswer = answer ? answer.idAnswer : '';
         return {
             idQuestion: value.idQuestion,
@@ -275,12 +274,8 @@ exports.doExam = async(req, res) => {
     const { submission, totalTime } = await checkSubmission(subject, exam, req.params.idSubmission, req.student._id);
     const setting = exam.setting;
     const questions = submission.answers.map(value => {
-        const quizBank = subject.quizBank.find(bank => {
-            return bank._id.equals(setting.code);
-        });
-        const question = quizBank.questions.find(ques => {
-            return ques._id.equals(value.idQuestion);
-        })
+        const quizBank = subject.quizBank.find(bank => bank._id.equals(setting.code));
+        const question = quizBank.questions.find(ques => ques._id.equals(value.idQuestion));
         return {
             _id: question._id,
             question: question.question,
@@ -364,10 +359,8 @@ exports.attemptExam = async(req, res) => {
 
 const checkSubmission = async(subject, exam, idSubmission, idStudent) => {
     const submission =
-        exam.submissions.find((value) => {
-            return value._id.equals(idSubmission) &&
-                value.idStudent.equals(idStudent)
-        });
+        exam.submissions.find((value) => value._id.equals(idSubmission) &&
+            value.idStudent.equals(idStudent));
 
     if (!submission) {
         throw new HttpNotFound("Not found submission!")

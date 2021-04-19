@@ -2,6 +2,60 @@ const mongoose = require("mongoose");
 const User = mongoose.model("User");
 const { verifyGoogle, verifyFacebook } = require('../../handlers/verifySocialHandler');
 const { HttpNotFound, HttpUnauthorized, HttpBadRequest, HttpInternalServerError } = require('../../utils/errors');
+const DETAILS = require('../../constants/AccountDetail');
+const PRIVILEGES = require('../../constants/PrivilegeCode');
+const STATUS = require('../../constants/AccountStatus');
+const { MailOptions } = require('../../utils/mailOptions');
+const { sendMail } = require('../../services/SendMail');
+
+exports.register = async(req, res) => {
+    const user = new User({
+        code: req.body.code,
+        password: req.body.password,
+        idPrivilege: PRIVILEGES.REGISTER,
+        emailAddress: req.body.emailAddress,
+        firstName: req.body.firstName,
+        lastName: req.body.lastName,
+        status: STATUS.NOT_ACTIVATED
+    });
+    await user.save();
+
+    res.json({
+        success: true,
+        message: 'Please login via email to activate account first!'
+    });
+}
+
+exports.requestResetPassword = async(req, res) => {
+    const user = await User.findOne({ emailAddress: req.body.emailAddress });
+    if (!user) {
+        throw new HttpNotFound('Not found user with this email!');
+    }
+    const token = user.generateAuthToken('1h');
+
+    const url = `https://www.facebook.com/?ssl=${token}`;
+    const mailOptions = new MailOptions({
+        subject: '[Account LMS HCMUTE] - Reset password',
+        to: user.emailAddress,
+        html: `Please follow this link to reset your password <a href="${url}">"${url}"</a>`
+    })
+    sendMail(mailOptions);
+    res.json({
+        success: true,
+        message: 'Check your email to get link reset password!'
+    })
+}
+
+exports.resetPassword = async(req, res) => {
+    const user = req.user;
+    user.password = req.body.password;
+    await user.save();
+    res.json({
+        success: true,
+        message: "Reset password successfully!"
+    })
+
+}
 
 exports.update = async(req, res) => {
     const user = req.user;
@@ -12,17 +66,7 @@ exports.update = async(req, res) => {
     await user.save();
 
     res.json({
-        user: {
-            _id: user._id,
-            code: user.code,
-            emailAddress: user.emailAddress,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            urlAvatar: user.urlAvatar,
-            facebookId: user.facebookId,
-            idPrivilege: user.idPrivilege,
-            isNotify: user.isNotify
-        }
+        user: await User.findById(user._id, DETAILS.DETAIL)
     })
 };
 
@@ -41,31 +85,27 @@ exports.updatePassword = async(req, res) => {
 };
 
 exports.authenticate = async(req, res) => {
-    const user = await User.findOne({ code: req.body.code, isDeleted: false });
-
+    const user = await User.findOne({ code: req.body.code });
     if (!user) {
         throw new HttpNotFound('Authentication failed. User not found');
     }
 
-    var validPassword = user.comparePassword(req.body.password);
+    if (user.status === STATUS.SUSPENDED) {
+        throw new HttpUnauthorized('Your account has been suspended!')
+    } else if (user.status === STATUS.NOT_ACTIVATED) {
+        throw new HttpUnauthorized('Please login via email to activate  account first!');
+    }
+
+    const validPassword = user.comparePassword(req.body.password);
     if (!validPassword) {
         throw new HttpBadRequest('Authentication failed. Wrong password!');
     }
+
     const token = user.generateAuthToken();
     res.json({
         success: true,
         message: 'Login successfully!',
-        user: {
-            _id: user._id,
-            code: user.code,
-            emailAddress: user.emailAddress,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            urlAvatar: user.urlAvatar,
-            idPrivilege: user.idPrivilege,
-            facebookId: user.facebookId,
-            isNotify: user.isNotify
-        },
+        user: await User.findById(user._id, DETAILS.DETAIL),
         type: 'authenticate',
         token: token
     });
@@ -73,33 +113,33 @@ exports.authenticate = async(req, res) => {
 
 exports.getInfo = async(req, res) => {
     const user = req.user;
-    const info = {
-        _id: user._id,
-        code: user.code,
-        emailAddress: user.emailAddress,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        urlAvatar: user.urlAvatar
-    }
-    res.json(info);
+    res.json({
+        info: await User.findById(user._id, DETAILS.DETAIL)
+    });
 }
 
 exports.authenticateGoogleToken = async(req, res) => {
     const userToken = req.body.token
     const payload = await verifyGoogle(userToken);
     const userEmail = payload.email;
-    const user = await User.findOne({ emailAddress: userEmail, isDeleted: false },
-        'code idPrivilege emailAddress firstName lastName urlAvatar facebookId isNotify');
+    const user = await User.findOne({ emailAddress: userEmail }, DETAILS.STATUS);
 
     if (!user) {
         throw new HttpNotFound(`Not found user ${userEmail}`);
+    }
+
+    if (user.status === STATUS.SUSPENDED) {
+        throw new HttpUnauthorized('Your account has been suspended!')
+    } else if (user.status === STATUS.NOT_ACTIVATED) {
+        user.status = STATUS.ACTIVATED;
+        await user.save();
     }
 
     const token = user.generateAuthToken();
     res.json({
         success: true,
         message: 'Login successfully!',
-        user: user,
+        user: await User.findById(user._id, DETAILS.DETAIL),
         type: 'google',
         token: token
     });
@@ -107,26 +147,27 @@ exports.authenticateGoogleToken = async(req, res) => {
 
 exports.authenticateFacebookToken = async(req, res) => {
     const userToken = req.body.token
-
     const payload = await verifyFacebook(userToken);
-
     if (!payload) {
         throw new HttpInternalServerError('Error while verify facebook access token')
     }
+    const facebookId = payload.id;
 
-    let facebookId = payload.id;
-    const user = await User.findOne({ facebookId: facebookId, isDeleted: false },
-        'code idPrivilege emailAddress firstName lastName urlAvatar facebookId isNotify');
-
+    const user = await User.findOne({ facebookId: facebookId }, DETAILS.STATUS);
     if (!user) {
         throw new HttpNotFound(`Not found user with this facebook`)
+    }
+    if (user.status === STATUS.SUSPENDED) {
+        throw new HttpUnauthorized('Your account has been suspended!')
+    } else if (user.status === STATUS.NOT_ACTIVATED) {
+        throw new HttpUnauthorized('Please login via email to activate  account first!');
     }
 
     const token = user.generateAuthToken();
     res.json({
         success: true,
         message: 'Login successfully!',
-        user: user,
+        user: await User.findById(user._id, DETAILS.DETAIL),
         type: 'facebook',
         token: token
     });
@@ -134,25 +175,20 @@ exports.authenticateFacebookToken = async(req, res) => {
 
 exports.linkFacebookAccount = async(req, res) => {
     const userToken = req.body.token
-    console.log(req.user);
-    console.log(req.user.facebookId);
     if (req.user.facebookId) {
         throw new HttpUnauthorized('Your account has already linked facebook account!');
     }
 
     const payload = await verifyFacebook(userToken);
-
     if (!payload) {
         throw new HttpInternalServerError('Error while verify facebook access token')
     }
 
     const facebookId = payload.id;
-
     const fbUser = await User.findOne({ facebookId: facebookId });
     if (fbUser) {
         throw new HttpUnauthorized('This facebook account is linked with another account!');
     }
-
     const user = req.user
     user.facebookId = facebookId;
 
@@ -160,17 +196,7 @@ exports.linkFacebookAccount = async(req, res) => {
 
     res.json({
         success: true,
-        user: {
-            _id: user._id,
-            code: user.code,
-            emailAddress: user.emailAddress,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            urlAvatar: user.urlAvatar,
-            idPrivilege: user.idPrivilege,
-            facebookId: user.facebookId,
-            isNotify: user.isNotify
-        },
+        user,
         message: `Link to facebook ${payload.name} successfully!`
     })
 
@@ -187,16 +213,7 @@ exports.unlinkFacebookAccount = async(req, res) => {
 
     res.send({
         success: true,
-        user: {
-            _id: user._id,
-            code: user.code,
-            emailAddress: user.emailAddress,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            urlAvatar: user.urlAvatar,
-            idPrivilege: user.idPrivilege,
-            isNotify: user.isNotify
-        },
+        user: await User.findById(user._id, DETAILS.DETAIL),
         message: `UnLink to facebook successfully!`
     });
 }

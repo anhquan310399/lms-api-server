@@ -6,6 +6,8 @@ const { getCommonData } = require('../../services/DataMapper');
 const { findTimeline, findAssignment } = require('../../services/DataSearcher');
 const { sendMail } = require('../../services/SendMail');
 const { MailOptions } = require('../../utils/mailOptions');
+const DETAILS = require("../../constants/AccountDetail");
+const PRIVILEGES = require("../../constants/PrivilegeCode");
 
 exports.create = async(req, res) => {
     const subject = req.subject;
@@ -39,7 +41,7 @@ exports.find = async(req, res) => {
     const today = new Date();
     const timingRemain = moment(assignment.setting.expireTime).from(moment(today));
 
-    if (req.user.idPrivilege === 'student') {
+    if (req.user.idPrivilege === PRIVILEGES.STUDENT) {
         const submission = await assignment.submissions.find(value => value.idStudent.equals(req.user._id));
 
         let isCanSubmit = false;
@@ -75,7 +77,7 @@ exports.find = async(req, res) => {
     } else {
         let submissions = await Promise.all(assignment.submissions
             .map(async function(submit) {
-                var student = await User.findById(submit.idStudent, 'code firstName lastName urlAvatar')
+                var student = await User.findById(submit.idStudent, DETAILS.COMMON)
                     .then(value => {
                         return value
                     });
@@ -272,7 +274,7 @@ exports.gradeSubmission = async(req, res) => {
     }
 
     await subject.save();
-    const student = await User.findById(submitted.idStudent, 'code firstName lastName emailAddress');
+    const student = await User.findById(submitted.idStudent, DETAILS.COMMON);
 
     const mailOptions = new MailOptions({
         to: student.emailAddress,
@@ -306,7 +308,7 @@ exports.commentFeedback = async(req, res) => {
 
     await subject.save();
     const comments = await Promise.all(submitted.feedBack.comments.map(async(comment) => {
-        const user = await User.findById(comment.idUser, 'code firstName lastName urlAvatar');
+        const user = await User.findById(comment.idUser, DETAILS.COMMON);
         return {
             _id: comment._id,
             user: user,

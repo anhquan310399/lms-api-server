@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const Privileges = mongoose.model('Privilege');
 const bcrypt = require('bcrypt');
 const ValidatorError = mongoose.Error.ValidatorError;
+const STATUS = require('../constants/AccountStatus');
 
 const UserSchema = mongoose.Schema({
     code: {
@@ -40,7 +41,7 @@ const UserSchema = mongoose.Schema({
         unique: [true, `Email address is existed`],
         lowercase: true,
         validate: function(value) {
-            if (this.idPrivilege !== 'admin') {
+            if (this.idPrivilege !== 'admin' || this.idPrivilege !== 'register') {
                 if (!validator.isEmail(value)) {
                     throw new ValidatorError({ message: 'Invalid Email address' });
                 } else if (!value.split('@').pop().includes('hcmute.edu.vn')) {
@@ -62,13 +63,14 @@ const UserSchema = mongoose.Schema({
         default: "http://simpleicon.com/wp-content/uploads/user1.png"
     },
     facebookId: String,
-    isDeleted: {
-        type: Boolean,
-        default: false
-    },
     isNotify: {
         type: Boolean,
         default: true
+    },
+    status: {
+        type: String,
+        required: [true, 'Status of user account is required'],
+        enum: [STATUS.ACTIVATED, STATUS.SUSPENDED, STATUS.NOT_ACTIVATED]
     }
 }, {
     timestamps: true,
@@ -101,19 +103,19 @@ UserSchema.methods.comparePassword = function(password) {
     return bcrypt.compareSync(password, user.password);
 };
 
-UserSchema.methods.generateAuthToken = function() {
+UserSchema.methods.generateAuthToken = function(expiresIn = '24h') {
     // Generate an auth token for the user
     const user = this
     var superSecret = process.env.JWT_KEY;
     const token = jwt.sign({
         _id: user._id,
         code: user.code,
-        idPrivilege: user.privilege,
+        idPrivilege: user.idPrivilege,
         emailAddress: user.emailAddress,
         firstName: user.firstName,
         lastName: user.lastName,
     }, superSecret, {
-        expiresIn: '24h'
+        expiresIn: expiresIn
     });
     return token
 }

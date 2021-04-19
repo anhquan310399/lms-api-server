@@ -1,9 +1,14 @@
 const { HttpNotFound } = require('../utils/errors');
+const PRIVILEGES = require('../constants/PrivilegeCode');
 
 const findTimeline = (subject, req) => {
     const id = req.query.idTimeline || req.params.idTimeline || req.body.idTimeline
     const timeline = subject.timelines.find(value => value._id.equals(id));
-    if (!timeline || (req.idPrivilege === 'student' && timeline.isDeleted === true)) {
+    if (!timeline ||
+        ((
+            req.user.idPrivilege === PRIVILEGES.STUDENT ||
+            req.user.idPrivilege === PRIVILEGES.REGISTER
+        ) && timeline.isDeleted === true)) {
         throw new HttpNotFound("Not found timeline");
     }
     return timeline;
@@ -13,7 +18,7 @@ const findForum = (subject, req) => {
     const timeline = findTimeline(subject, req);
     const id = req.query.idForum || req.params.idForum || req.body.idForum
     const forum = timeline.forums.find(value => value._id.equals(id));
-    if (!forum || (req.idPrivilege === 'student' && forum.isDeleted === true)) {
+    if (!forum || ((req.user.idPrivilege === PRIVILEGES.STUDENT || req.user.idPrivilege === PRIVILEGES.REGISTER) && forum.isDeleted === true)) {
         throw new HttpNotFound("Not found forum");
     }
     return { timeline, forum }
@@ -33,7 +38,7 @@ const findAssignment = (subject, req) => {
     const timeline = findTimeline(subject, req);
     const id = req.query.idAssignment || req.params.idAssignment || req.body.idAssignment
     const assignment = timeline.assignments.find(value => value._id.equals(id));
-    if (!assignment || (req.idPrivilege === 'student' && assignment.isDeleted === true)) {
+    if (!assignment || ((req.user.idPrivilege === PRIVILEGES.STUDENT || req.user.idPrivilege === PRIVILEGES.REGISTER) && assignment.isDeleted === true)) {
         throw new HttpNotFound("Not found assignment");
     }
     return { timeline, assignment };
@@ -53,7 +58,7 @@ const findExam = (subject, req) => {
     const timeline = findTimeline(subject, req);
     const id = req.query.idExam || req.params.idExam || req.body.idExam
     const exam = timeline.exams.find(value => value._id.equals(id));
-    if (!exam || (req.idPrivilege === 'student' && exam.isDeleted === true)) {
+    if (!exam || ((req.user.idPrivilege === PRIVILEGES.STUDENT || req.user.idPrivilege === PRIVILEGES.REGISTER) && exam.isDeleted === true)) {
         throw new HttpNotFound("Not found exam");
     }
     return { timeline, exam };
@@ -71,7 +76,7 @@ const findSurvey = (subject, req) => {
     const timeline = findTimeline(subject, req);
     const id = req.query.idSurvey || req.params.idSurvey || req.body.idSurvey
     const survey = timeline.surveys.find(value => value._id.equals(id));
-    if (!survey || (req.idPrivilege === 'student' && survey.isDeleted === true)) {
+    if (!survey || ((req.user.idPrivilege === PRIVILEGES.STUDENT || req.user.idPrivilege === PRIVILEGES.REGISTER) && survey.isDeleted === true)) {
         throw new HttpNotFound("Not found survey");
     }
     return { timeline, survey };

@@ -111,7 +111,7 @@ exports.uploadFile = async(req, res) => {
 exports.getFile = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
-    const file = timeline.files.find(value => value._id == req.params.idFile);
+    const file = timeline.files.find(value => value._id.equals(req.params.idFile));
     if (!file) {
         throw new HttpNotFound("Not found file");
     }
@@ -124,7 +124,7 @@ exports.getFile = async(req, res) => {
 exports.updateFile = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
-    const file = timeline.files.find(value => value._id == req.params.idFile);
+    const file = timeline.files.find(value => value._id.equals(req.params.idFile));
     if (!file) {
         throw new HttpNotFound("Not found file");
     }
@@ -145,7 +145,7 @@ exports.updateFile = async(req, res) => {
 exports.removeFile = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
-    const file = timeline.files.find(value => value._id == req.params.idFile);
+    const file = timeline.files.find(value => value._id.equals(req.params.idFile));
     if (!file) {
         throw new HttpNotFound("Not found file");
     }

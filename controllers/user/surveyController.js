@@ -2,6 +2,7 @@ const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../../utils/
 const { getCommonData } = require('../../services/DataMapper');
 const { findTimeline, findSurvey, findSurveyBank } = require('../../services/DataSearcher');
 const moment = require('moment');
+const PRIVILEGES = require("../../constants/PrivilegeCode");
 
 exports.create = async(req, res) => {
     const subject = req.subject;
@@ -30,7 +31,7 @@ exports.find = async(req, res) => {
     const today = new Date();
     const isRemain = today > survey.expireTime ? false : true;
     const timeRemain = moment(survey.expireTime).from(moment(today));
-    if (req.idPrivilege === 'student') {
+    if (req.user.idPrivilege === PRIVILEGES.STUDENT) {
         const reply = survey.responses.find(value => value.idStudent.equals(req.user._id));
         res.json({
             success: true,

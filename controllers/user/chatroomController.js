@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Chatroom = mongoose.model("Chatroom");
 const User = mongoose.model("User");
 const Message = mongoose.model("Message");
-const { HttpNotFound, HttpUnauthorized, HttpInternalServerError } = require('../../utils/errors');
+const { HttpUnauthorized } = require('../../utils/errors');
 const _ = require('lodash');
 const { getDetailMessage } = require('../../services/DataMapper');
 exports.createChatroom = async (req, res) => {

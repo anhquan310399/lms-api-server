@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Subject = mongoose.model("Subject");
 const User = mongoose.model("User");
 const { HttpNotFound, HttpBadRequest, HttpUnauthorized } = require('../../utils/errors');
-const examStatusCodes = require('../../constants/ExamStatusCodes');
+const examStatusCodes = require('../../constants/examStatusCodes');
 const {
     filterTimelines,
     getListAssignmentAndExam,

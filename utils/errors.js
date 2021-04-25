@@ -1,4 +1,4 @@
-const responseCodes = require('../constants/HttpResponseCodes.js');
+const responseCodes = require('../constants/httpResponseCodes.js');
 
 class HttpError extends Error {
     constructor({ message, name, status, stack }) {

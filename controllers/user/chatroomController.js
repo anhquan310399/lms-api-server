@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Chatroom = mongoose.model("Chatroom");
 const User = mongoose.model("User");
 const Message = mongoose.model("Message");
-const { HttpUnauthorized } = require('../../utils/errors');
+const { HttpUnauthorized, HttpNotFound } = require('../../utils/errors');
 const _ = require('lodash');
 const { getDetailMessage } = require('../../services/DataMapper');
 exports.createChatroom = async (req, res) => {
@@ -57,6 +57,9 @@ exports.getAllChatrooms = async (req, res) => {
 
 exports.getChatroom = async (req, res) => {
     const chatroom = await Chatroom.findById(req.params.idChatroom);
+    if (!chatroom) {
+        throw new HttpNotFound("Not found chat room!");
+    }
     let messages = _.reverse(await Message.find({ idChatroom: chatroom._id })
         .sort({ createdAt: -1 }).limit(20));
     messages = await Promise.all(messages.map(async message => {
@@ -72,5 +75,22 @@ exports.getChatroom = async (req, res) => {
             image: user.urlAvatar,
             messages
         }
+    });
+}
+
+exports.getMessages = async (req, res) => {
+    const chatroom = await Chatroom.findById(req.params.idChatroom);
+    if (!chatroom) {
+        throw new HttpNotFound("Not found chat room!");
+    }
+    const current = req.body.current;
+    let messages = _.reverse(await Message.find({ idChatroom: chatroom._id })
+        .sort({ createdAt: -1 }).skip(current).limit(20));
+    messages = await Promise.all(messages.map(async message => {
+        return getDetailMessage(message);
+    }));
+
+    res.json({
+        messages
     });
 }

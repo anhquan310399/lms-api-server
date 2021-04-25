@@ -4,21 +4,27 @@ const courseCTL = require("../controllers/admin/courseController");
 const subjectCTL = require("../controllers/admin/subjectController");
 const privilegeCTL = require("../controllers/admin/privilegeController");
 const userCTL = require("../controllers/admin/userController");
+const adminCTL = require("../controllers/admin/adminController");
 
 const { authAdmin } = require("../middlewares/auth")
+
+router.get("/statistic", authAdmin, catchErrors(adminCTL.getStatistic));
 
 /**
  * Route for course controller
  */
 router.post("/course", authAdmin, catchErrors(courseCTL.create));
+router.post("/course/filter", authAdmin, catchErrors(courseCTL.filterCourses));
 router.get("/course", authAdmin, catchErrors(courseCTL.findAll));
 router.get("/course/:id", authAdmin, catchErrors(courseCTL.findById));
 router.put("/course/:id", authAdmin, catchErrors(courseCTL.update));
-router.delete("/course/:id", authAdmin, catchErrors(courseCTL.delete));
+router.put("/course/:id/force", authAdmin, catchErrors(courseCTL.setCurrentCourse));
 
 /**
  * Route for subject controller
  */
+router.get('/subject/statistic', authAdmin, catchErrors(subjectCTL.getStatistic));
+router.post('/subject/filter', authAdmin, catchErrors(subjectCTL.filterSubjects));
 router.get('/subject', authAdmin, catchErrors(subjectCTL.findAll));
 router.post('/subject', authAdmin, catchErrors(subjectCTL.create));
 router.put('/subject/:idSubject', authAdmin, catchErrors(subjectCTL.update));
@@ -38,11 +44,14 @@ router.delete("/privilege/:id", authAdmin, catchErrors(privilegeCTL.delete));
 /**
  * Route for user controller
  */
-router.get('/user/teachers', authAdmin, catchErrors(userCTL.findAllTeachers));
-router.get('/user/students', authAdmin, catchErrors(userCTL.findAllStudents));
+router.get('/user/statistic', authAdmin, catchErrors(userCTL.getStatistics));
+router.get('/user/teacher', authAdmin, catchErrors(userCTL.findAllTeachers));
+router.post('/user/teacher', authAdmin, catchErrors(userCTL.filterTeachers));
+router.post('/user/student', authAdmin, catchErrors(userCTL.filterStudents));
+router.post('/user/register', authAdmin, catchErrors(userCTL.filterRegisters));
 router.get('/user/:code', authAdmin, catchErrors(userCTL.findUser));
 router.get('/user/', authAdmin, catchErrors(userCTL.findAll));
 router.post('/user/', authAdmin, catchErrors(userCTL.create));
-router.put('/user/:id/hide', authAdmin, catchErrors(userCTL.hideOrUnhide));
+router.put('/user/:id/lock', authAdmin, catchErrors(userCTL.lockUser));
 
 module.exports = router;

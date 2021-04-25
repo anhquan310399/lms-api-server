@@ -17,12 +17,14 @@ const { MailOptions } = require('../../utils/mailOptions');
 const { sendMail } = require('../../services/SendMail');
 const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
+const { getCurrentCourse } = require('../../common/getCurrentCourse');
 
-exports.create = async(req, res) => {
+exports.create = async (req, res) => {
     const data = req.body;
+    const currentCourse = getCurrentCourse();
     const subject = new Subject({
         name: data.name,
-        idCourse: process.env.CURRENT_COURSE,
+        idCourse: currentCourse._id,
         config: {
             role: data.config.role,
             acceptEnroll: data.config.acceptEnroll
@@ -39,14 +41,14 @@ exports.create = async(req, res) => {
     });
 };
 
-exports.findAll = async(req, res) => {
+exports.findAll = async (req, res) => {
     const idPrivilege = req.user.idPrivilege;
     let allSubject = [];
     if (idPrivilege === PRIVILEGES.TEACHER) {
         allSubject = await Subject.find({ idLecture: req.user._id, isDeleted: false }, "name");
     } else {
         const subjects = await Subject.find({ 'studentIds': req.user._id, isDeleted: false })
-        allSubject = await Promise.all(subjects.map(async(value) => {
+        allSubject = await Promise.all(subjects.map(async (value) => {
             const teacher = await User.findOne({ _id: value.idLecture }, DETAILS.COMMON)
             return { _id: value._id, name: value.name, lecture: teacher };
         }));
@@ -58,10 +60,10 @@ exports.findAll = async(req, res) => {
     });
 };
 
-exports.find = async(req, res) => {
+exports.find = async (req, res) => {
     const subject = req.subject;
     let timelines = req.subject.timelines;
-    timelines = await filterTimelines(timelines, req.user.idPrivilege === PRIVILEGES.STUDENT ? true : false);
+    timelines = await filterTimelines(timelines, req.user.idPrivilege === PRIVILEGES.TEACHER ? false : true);
     const result = {
         _id: subject._id,
         name: subject.name,
@@ -74,9 +76,9 @@ exports.find = async(req, res) => {
     });
 };
 
-exports.findAllPublicSubject = async(req, res) => {
+exports.findAllPublicSubject = async (req, res) => {
     const subjects = await Subject.find({ 'config.role': 'public', isDeleted: false })
-    const allSubject = await Promise.all(subjects.map(async(value) => {
+    const allSubject = await Promise.all(subjects.map(async (value) => {
         var teacher = await User.findOne({ _id: value.idLecture }, DETAILS.COMMON)
         return { _id: value._id, name: value.name, lecture: teacher };
     }));
@@ -88,7 +90,7 @@ exports.findAllPublicSubject = async(req, res) => {
 }
 
 //Config of subjects
-exports.getConfig = async(req, res) => {
+exports.getConfig = async (req, res) => {
     const subject = req.subject;
     res.json({
         success: true,
@@ -100,7 +102,7 @@ exports.getConfig = async(req, res) => {
     });
 }
 
-exports.updateConfig = async(req, res) => {
+exports.updateConfig = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -125,11 +127,11 @@ exports.updateConfig = async(req, res) => {
 };
 
 //Enroll Requests
-exports.getEnrollRequests = async(req, res) => {
+exports.getEnrollRequests = async (req, res) => {
     const subject = req.subject;
 
     const requests = await Promise.all(
-        subject.enrollRequests.map(async(id) =>
+        subject.enrollRequests.map(async (id) =>
             await User.findById(id, DETAILS.COMMON)
         ));
 
@@ -139,7 +141,7 @@ exports.getEnrollRequests = async(req, res) => {
     });
 }
 
-exports.enrollSubject = async(req, res) => {
+exports.enrollSubject = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -176,7 +178,7 @@ exports.enrollSubject = async(req, res) => {
             to: teacher.emailAddress,
             subject: `[${subject.name}] - New Student Enroll`,
             text: `Student: ${student.firstName
-                +" "+ student.lastName}, 
+                + " " + student.lastName}, 
                 MSSV: ${student.code} has just enrolled your subject [${subject.name}]`
         });
     } else {
@@ -184,7 +186,7 @@ exports.enrollSubject = async(req, res) => {
             to: teacher.emailAddress,
             subject: `[${subject.name}] - New Enroll Request`,
             text: `Student: ${student.firstName
-                +" "+ student.lastName}, 
+                + " " + student.lastName}, 
                 MSSV: ${student.code} has just requested enroll your subject [${subject.name}]`
         });
     }
@@ -199,7 +201,7 @@ exports.enrollSubject = async(req, res) => {
     });
 }
 
-exports.acceptEnrollRequest = async(req, res) => {
+exports.acceptEnrollRequest = async (req, res) => {
     const subject = req.subject;
 
     const isEnrolled = subject.enrollRequests.find(value => value.equals(req.body.idStudent));
@@ -233,7 +235,7 @@ exports.acceptEnrollRequest = async(req, res) => {
     });
 }
 
-exports.denyEnrollRequest = async(req, res) => {
+exports.denyEnrollRequest = async (req, res) => {
     const subject = req.subject;
 
     const isEnrolled = subject.enrollRequests.find(value => value.equals(req.body.idStudent));
@@ -260,11 +262,11 @@ exports.denyEnrollRequest = async(req, res) => {
 }
 
 //Exit subject
-exports.getExitRequests = async(req, res) => {
+exports.getExitRequests = async (req, res) => {
     const subject = req.subject;
 
     const requests = await Promise.all(
-        subject.exitRequests.map(async(value) =>
+        subject.exitRequests.map(async (value) =>
             await User.findById(value, DETAILS.COMMON)
         ));
     res.json({
@@ -273,7 +275,7 @@ exports.getExitRequests = async(req, res) => {
     });
 }
 
-exports.exitSubject = async(req, res) => {
+exports.exitSubject = async (req, res) => {
     const subject = req.subject;
     let message = ""
     if (subject.config.role === 'public') {
@@ -292,7 +294,7 @@ exports.exitSubject = async(req, res) => {
             to: teacher.emailAddress,
             subject: `[${subject.name}] - Request Exit Subject`,
             text: `Student: ${student.firstName
-                +" "+ student.lastName}, 
+                + " " + student.lastName}, 
                 MSSV: ${student.code} has just request to exit your subject [${subject.name}]`
         });
         //sendMail(mailOptions);
@@ -306,7 +308,7 @@ exports.exitSubject = async(req, res) => {
     });
 }
 
-exports.acceptExitRequest = async(req, res) => {
+exports.acceptExitRequest = async (req, res) => {
     const subject = req.subject;
 
     const isRed = subject.exitRequests.find(value => value.equals(req.body.idStudent));
@@ -334,7 +336,7 @@ exports.acceptExitRequest = async(req, res) => {
     });
 }
 
-exports.denyExitRequest = async(req, res) => {
+exports.denyExitRequest = async (req, res) => {
     const subject = req.subject;
 
     const isReq = subject.exitRequests.find(value => value.equals(req.body.idStudent));
@@ -361,11 +363,11 @@ exports.denyExitRequest = async(req, res) => {
 }
 
 //List students in subject
-exports.getListStudent = async(req, res) => {
+exports.getListStudent = async (req, res) => {
     const subject = req.subject;
 
     const students = _.sortBy(await Promise.all(
-        subject.studentIds.map(async(idStudent) =>
+        subject.studentIds.map(async (idStudent) =>
             await User.findById(idStudent, DETAILS.COMMON)
         )), ['code']);
     res.json({
@@ -374,7 +376,7 @@ exports.getListStudent = async(req, res) => {
     });
 }
 
-exports.addStudent = async(req, res) => {
+exports.addStudent = async (req, res) => {
     const subject = req.subject;
 
     const student = await User.findOne({
@@ -400,7 +402,7 @@ exports.addStudent = async(req, res) => {
     });
 };
 
-exports.removeStudent = async(req, res) => {
+exports.removeStudent = async (req, res) => {
     const subject = req.subject;
 
     const index = subject.studentIds.indexOf(req.body.idStudent);
@@ -417,7 +419,7 @@ exports.removeStudent = async(req, res) => {
     });
 }
 
-exports.addListStudents = async(req, res) => {
+exports.addListStudents = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -434,7 +436,7 @@ exports.addListStudents = async(req, res) => {
 };
 
 // Order timelines of subject
-exports.getOrderOfTimeLine = async(req, res) => {
+exports.getOrderOfTimeLine = async (req, res) => {
     const data = req.subject;
     let result = {
         _id: data._id,
@@ -449,7 +451,7 @@ exports.getOrderOfTimeLine = async(req, res) => {
     });
 }
 
-exports.adjustOrderOfTimeline = async(req, res) => {
+exports.adjustOrderOfTimeline = async (req, res) => {
     const adjust = req.body;
     const subject = req.subject;
     await adjust.forEach(element => {
@@ -467,14 +469,14 @@ exports.adjustOrderOfTimeline = async(req, res) => {
 }
 
 // Score in subject
-exports.getSubjectTranscript = async(req, res) => {
+exports.getSubjectTranscript = async (req, res) => {
     const subject = req.subject;
     const today = new Date();
     const fields = await getListAssignmentAndExam(subject, today);
     if (req.user.idPrivilege === PRIVILEGES.STUDENT ||
         req.user.idPrivilege === PRIVILEGES.REGISTER) {
 
-        let transcript = await Promise.all(fields.map(async(field) => {
+        let transcript = await Promise.all(fields.map(async (field) => {
             let submission = await field.submissions.find(value => value.idStudent.equals(req.user._id));
             let grade = 0;
             let status;
@@ -514,9 +516,9 @@ exports.getSubjectTranscript = async(req, res) => {
             transcript
         });
     } else {
-        let transcript = await Promise.all(fields.map(async(field) => {
+        let transcript = await Promise.all(fields.map(async (field) => {
             let submissions = await Promise.all(
-                subject.studentIds.map(async(idStudent) => {
+                subject.studentIds.map(async (idStudent) => {
                     const student = await User.findById(idStudent, DETAILS.COMMON);
 
                     let submission = field.submissions.find(value => value.idStudent.equals(student._id));
@@ -572,7 +574,7 @@ exports.getSubjectTranscript = async(req, res) => {
     }
 }
 
-exports.getSubjectTranscriptTotal = async(req, res) => {
+exports.getSubjectTranscriptTotal = async (req, res) => {
     let subject = req.subject;
     let today = new Date();
     let assignmentOrExam = await getListAssignmentAndExam(subject, today);
@@ -593,7 +595,7 @@ exports.getSubjectTranscriptTotal = async(req, res) => {
     });
 
     let data = await Promise.all(subject.studentIds.map(
-        async(idStudent) => {
+        async (idStudent) => {
             const student = await User.findById(idStudent, DETAILS.COMMON)
                 .then(value => { return value });
             let data = {
@@ -602,7 +604,7 @@ exports.getSubjectTranscriptTotal = async(req, res) => {
                 'c2': student.firstName
             };
             let count = 3;
-            let grade = await Promise.all(assignmentOrExam.map(async(value) => {
+            let grade = await Promise.all(assignmentOrExam.map(async (value) => {
                 let submission = value.submissions.find(value => value.idStudent.equals(student._id));
                 if (submission) {
                     return submission.grade;
@@ -635,10 +637,10 @@ exports.getSubjectTranscriptTotal = async(req, res) => {
 
 }
 
-exports.updateRatioTranscript = async(req, res) => {
+exports.updateRatioTranscript = async (req, res) => {
     let subject = req.subject;
     let adjust = req.body;
-    await adjust.forEach(async(value) => {
+    await adjust.forEach(async (value) => {
         let transcript = await subject.transcript.find(ratio => ratio._id.equals(value._id));
         if (transcript) {
             transcript.ratio = value.ratio;
@@ -651,7 +653,7 @@ exports.updateRatioTranscript = async(req, res) => {
 }
 
 //Import, Export Subject
-exports.importSubject = async(req, res) => {
+exports.importSubject = async (req, res) => {
     const subject = req.subject;
 
     if (req.body.timelines) {
@@ -699,7 +701,7 @@ exports.importSubject = async(req, res) => {
     });
 };
 
-exports.exportSubject = async(req, res) => {
+exports.exportSubject = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject)
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -721,7 +723,7 @@ exports.exportSubject = async(req, res) => {
     res.send(subject)
 }
 
-exports.exportSubjectWithCondition = async(req, res) => {
+exports.exportSubjectWithCondition = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -757,7 +759,7 @@ exports.exportSubjectWithCondition = async(req, res) => {
 }
 
 //Get Deadline
-exports.getDeadline = async(req, res) => {
+exports.getDeadline = async (req, res) => {
     const listSubject = await Subject.find({ 'studentIds': req.student._id, isDeleted: false });
     let deadline = [];
     listSubject.forEach(subject => {
@@ -770,7 +772,7 @@ exports.getDeadline = async(req, res) => {
     });
 }
 
-exports.getDeadlineBySubject = async(req, res) => {
+exports.getDeadlineBySubject = async (req, res) => {
     let deadline = getDeadlineOfSubject(req.subject, req.student);
 
     res.json({

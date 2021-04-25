@@ -9,7 +9,7 @@ const { MailOptions } = require('../../utils/mailOptions');
 const DETAILS = require("../../constants/AccountDetail");
 const PRIVILEGES = require("../../constants/PrivilegeCode");
 
-exports.create = async(req, res) => {
+exports.create = async (req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const data = req.body.data;
@@ -35,13 +35,13 @@ exports.create = async(req, res) => {
     });
 };
 
-exports.find = async(req, res) => {
+exports.find = async (req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
     const today = new Date();
     const timingRemain = moment(assignment.setting.expireTime).from(moment(today));
 
-    if (req.user.idPrivilege === PRIVILEGES.STUDENT) {
+    if (req.user.idPrivilege === PRIVILEGES.STUDENT || req.user.idPrivilege === PRIVILEGES.REGISTER) {
         const submission = await assignment.submissions.find(value => value.idStudent.equals(req.user._id));
 
         let isCanSubmit = false;
@@ -76,7 +76,7 @@ exports.find = async(req, res) => {
         })
     } else {
         let submissions = await Promise.all(assignment.submissions
-            .map(async function(submit) {
+            .map(async function (submit) {
                 var student = await User.findById(submit.idStudent, DETAILS.COMMON)
                     .then(value => {
                         return value
@@ -106,7 +106,7 @@ exports.find = async(req, res) => {
     }
 };
 
-exports.findUpdate = async(req, res) => {
+exports.findUpdate = async (req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
 
@@ -124,10 +124,10 @@ exports.findUpdate = async(req, res) => {
 
 };
 
-exports.findAll = async(req, res) => {
+exports.findAll = async (req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
-    const assignments = await Promise.all(timeline.assignments.map(async(value) => {
+    const assignments = await Promise.all(timeline.assignments.map(async (value) => {
         return {
             _id: value._id,
             name: value.name,
@@ -142,7 +142,7 @@ exports.findAll = async(req, res) => {
     })
 };
 
-exports.update = async(req, res) => {
+exports.update = async (req, res) => {
     const data = req.body.data;
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
@@ -176,7 +176,7 @@ exports.update = async(req, res) => {
     });
 };
 
-exports.delete = async(req, res) => {
+exports.delete = async (req, res) => {
     const subject = req.subject;
     const { timeline, assignment } = findAssignment(subject, req);
     const indexAssignment = timeline.assignments.indexOf(assignment);
@@ -189,13 +189,13 @@ exports.delete = async(req, res) => {
     });
 };
 
-exports.hideOrUnhide = async(req, res) => {
+exports.hideOrUnhide = async (req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
     assignment.isDeleted = !assignment.isDeleted;
 
     await subject.save();
-    const message = `${assignment.isDeleted?'Hide':'Unhide'} assignment ${assignment.name} successfully!`;
+    const message = `${assignment.isDeleted ? 'Hide' : 'Unhide'} assignment ${assignment.name} successfully!`;
     res.send({
         success: true,
         message,
@@ -203,7 +203,7 @@ exports.hideOrUnhide = async(req, res) => {
     });
 };
 
-exports.submit = async(req, res) => {
+exports.submit = async (req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
 
@@ -259,7 +259,7 @@ exports.submit = async(req, res) => {
     }
 };
 
-exports.gradeSubmission = async(req, res) => {
+exports.gradeSubmission = async (req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
 
@@ -290,7 +290,7 @@ exports.gradeSubmission = async(req, res) => {
     });
 }
 
-exports.commentFeedback = async(req, res) => {
+exports.commentFeedback = async (req, res) => {
     const subject = req.subject;
     const { assignment } = findAssignment(subject, req);
 
@@ -307,7 +307,7 @@ exports.commentFeedback = async(req, res) => {
     })
 
     await subject.save();
-    const comments = await Promise.all(submitted.feedBack.comments.map(async(comment) => {
+    const comments = await Promise.all(submitted.feedBack.comments.map(async (comment) => {
         const user = await User.findById(comment.idUser, DETAILS.COMMON);
         return {
             _id: comment._id,

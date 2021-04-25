@@ -8,7 +8,7 @@ const { findTimeline, findQuizBank, findExam } = require('../../services/DataSea
 const DETAILS = require("../../constants/AccountDetail");
 const PRIVILEGES = require("../../constants/PrivilegeCode");
 
-exports.create = async(req, res) => {
+exports.create = async (req, res) => {
     const subject = req.subject;
 
     const timeline = findTimeline(subject, req);
@@ -41,7 +41,7 @@ exports.create = async(req, res) => {
     })
 };
 
-exports.find = async(req, res) => {
+exports.find = async (req, res) => {
     const subject = req.subject;
 
     const { exam } = findExam(subject, req);
@@ -52,11 +52,11 @@ exports.find = async(req, res) => {
     const isOpen = (today >= setting.startTime && today <= setting.expireTime)
     const timingRemain = moment(setting.expireTime).from(moment(today));
 
-    if (req.user.idPrivilege === PRIVILEGES.STUDENT) {
+    if (req.user.idPrivilege === PRIVILEGES.STUDENT || req.user.idPrivilege === PRIVILEGES.REGISTER) {
         let submissions = exam.submissions.filter(value => value.idStudent.equals(req.user._id));
         let isContinue = false;
         let time = 1;
-        submissions = await Promise.all(submissions.map(async(submission, index) => {
+        submissions = await Promise.all(submissions.map(async (submission, index) => {
             if (index = submissions.length) {
                 if (today >= setting.startTime && today < setting.expireTime) {
                     if (!submission.isSubmitted) {
@@ -110,7 +110,7 @@ exports.find = async(req, res) => {
     } else {
         let key = 0;
         const submissions = await Promise.all(
-            subject.studentIds.map(async(idStudent) => {
+            subject.studentIds.map(async (idStudent) => {
                 const student = await User.findById(idStudent, DETAILS.COMMON);
                 const submissions = exam.submissions.filter(value => value.idStudent.equals(student._id));
                 if (submissions && submissions.length > 0) {
@@ -152,7 +152,7 @@ exports.find = async(req, res) => {
     }
 };
 
-exports.findUpdate = async(req, res) => {
+exports.findUpdate = async (req, res) => {
     const subject = req.subject;
     const { exam } = findExam(subject, req);
     res.json({
@@ -168,7 +168,7 @@ exports.findUpdate = async(req, res) => {
 
 };
 
-exports.findAll = async(req, res) => {
+exports.findAll = async (req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const exams = timeline.exams.map(value => getCommonData(value));
@@ -179,7 +179,7 @@ exports.findAll = async(req, res) => {
     })
 };
 
-exports.update = async(req, res) => {
+exports.update = async (req, res) => {
     const subject = req.subject;
     const { exam } = findExam(subject, req);
     const data = req.body.data;
@@ -215,7 +215,7 @@ exports.update = async(req, res) => {
     })
 };
 
-exports.delete = async(req, res) => {
+exports.delete = async (req, res) => {
     const subject = req.subject;
 
     const { exam, timeline } = findExam(subject, req);
@@ -230,14 +230,14 @@ exports.delete = async(req, res) => {
     });
 };
 
-exports.hideOrUnhide = async(req, res) => {
+exports.hideOrUnhide = async (req, res) => {
     const subject = req.subject;
 
     const { exam } = findExam(subject, req);
     exam.isDeleted = !exam.isDeleted;
 
     await subject.save()
-    const message = `${exam.isDeleted?'Hide':'Unhide'} exam ${exam.name} successfully!`;;
+    const message = `${exam.isDeleted ? 'Hide' : 'Unhide'} exam ${exam.name} successfully!`;;
 
     res.json({
         success: true,
@@ -246,7 +246,7 @@ exports.hideOrUnhide = async(req, res) => {
     });
 };
 
-exports.submitExam = async(req, res) => {
+exports.submitExam = async (req, res) => {
     const subject = req.subject;
     const { exam } = findExam(subject, req);
     const { submission, totalTime } = await checkSubmission(subject, exam, req.params.idSubmission, req.student._id);
@@ -268,7 +268,7 @@ exports.submitExam = async(req, res) => {
 
 }
 
-exports.doExam = async(req, res) => {
+exports.doExam = async (req, res) => {
     const subject = req.subject;
     const { exam } = findExam(subject, req);
     const { submission, totalTime } = await checkSubmission(subject, exam, req.params.idSubmission, req.student._id);
@@ -295,7 +295,7 @@ exports.doExam = async(req, res) => {
 
 }
 
-exports.attemptExam = async(req, res) => {
+exports.attemptExam = async (req, res) => {
     const subject = req.subject;
     const { exam } = findExam(subject, req);
     const today = new Date();
@@ -357,7 +357,7 @@ exports.attemptExam = async(req, res) => {
     }
 }
 
-const checkSubmission = async(subject, exam, idSubmission, idStudent) => {
+const checkSubmission = async (subject, exam, idSubmission, idStudent) => {
     const submission =
         exam.submissions.find((value) => value._id.equals(idSubmission) &&
             value.idStudent.equals(idStudent));

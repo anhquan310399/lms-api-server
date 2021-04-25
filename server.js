@@ -34,6 +34,7 @@ const io = require("socket.io")(server, { cors: { origin: '*' } });
 const jwt = require("jsonwebtoken");
 
 const Message = mongoose.model("Message");
+const User = mongoose.model("User");
 const { getDetailMessage } = require('./services/DataMapper');
 
 io.use((socket, next) => {
@@ -47,11 +48,26 @@ io.use((socket, next) => {
     }
 });
 
+const countOnlineUser = async () => {
+    const user = (await User.find({})).length;
+    const online = io.engine.clientsCount;
+    io.to("admin").emit("countUsers", {
+        online,
+        percent: (online * 100 / user).toFixed(0)
+    });
+}
+
 io.on("connection", (socket) => {
-    // console.log("Connected: " + socket.idUser);
-    // socket.on("disconnect", () => {
-    //     console.log("Disconnected: " + socket.idUser);
-    // });
+    countOnlineUser();
+
+    socket.on("disconnect", () => {
+        countOnlineUser();
+    });
+
+    socket.on("join-admin", (() => {
+        socket.join("admin");
+        countOnlineUser();
+    }));
 
     socket.on("join-chat", ({ chatroomId }) => {
         socket.join(chatroomId);
@@ -62,16 +78,21 @@ io.on("connection", (socket) => {
             console.log("A user left chatroom: " + chatroomId);
         });
 
-        socket.on("message", async({ message }) => {
+        socket.on("message", async ({ message }) => {
             if (message.trim().length > 0) {
                 const newMessage = new Message({
                     idChatroom: chatroomId,
                     idUser: socket.idUser,
                     message,
+                    createdAt: new Date()
                 });
                 io.to(chatroomId).emit("newMessage", await getDetailMessage(newMessage));
                 await newMessage.save();
             }
+        });
+        socket.on("disconnect", () => {
+            socket.leave(chatroomId);
+            console.log("A user left chatroom: " + chatroomId);
         });
     });
 
@@ -79,7 +100,7 @@ io.on("connection", (socket) => {
         socket.join(zoomId)
         socket.to(zoomId).emit('user-connected', peerId)
 
-        socket.on('message', async(message) => {
+        socket.on('message', async (message) => {
             message = {
                 idUser: socket.idUser,
                 message
@@ -93,7 +114,7 @@ io.on("connection", (socket) => {
         })
         socket.on('disconnect', () => {
             console.log("A user left zoom: " + peerId);
-            socket.to(zoomId).emit('user-disconnected', peerId);
+            io.to(zoomId).emit('user-disconnected', peerId);
             socket.leave(zoomId);
         })
     })

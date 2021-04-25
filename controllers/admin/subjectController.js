@@ -4,7 +4,7 @@ const { HttpNotFound } = require('../../utils/errors');
 const { getSubjectByAdmin } = require('../../services/DataMapper');
 const _ = require('lodash');
 
-exports.create = async(req, res) => {
+exports.create = async (req, res) => {
     const subject = new Subject({
         name: req.body.name,
         idCourse: req.body.idCourse,
@@ -22,9 +22,9 @@ exports.create = async(req, res) => {
     });
 };
 
-exports.findAll = async(req, res) => {
+exports.findAll = async (req, res) => {
     const subjects = await Subject.find({});
-    const allSubject = await Promise.all(subjects.map(async(value) => {
+    const allSubject = await Promise.all(subjects.map(async (value) => {
         return getSubjectByAdmin(value);
     }));
 
@@ -34,7 +34,34 @@ exports.findAll = async(req, res) => {
     });
 };
 
-exports.find = async(req, res) => {
+exports.filterSubjects = async (req, res) => {
+    const page = parseInt(req.body.page);
+    const size = parseInt(req.body.pageSize);
+    const role = req.body.role ?
+        [{ 'config.role': req.body.role }] :
+        [{ 'config.role': 'public' },
+        { 'config.role': 'private' }];
+    const name = req.body.name || "";
+
+    const subjects = await Subject.find({
+        name: { $regex: new RegExp( name.toLowerCase(), "i") },
+        $or: role
+    }).skip((page - 1) * size).limit(size);
+    const allSubject = await Promise.all(subjects.map(async (value) => {
+        return getSubjectByAdmin(value);
+    }));
+    const total = await Subject.countDocuments({
+        name: { $regex: new RegExp( name.toLowerCase(), "i") },
+        $or: role
+    })
+    res.json({
+        success: true,
+        allSubject: allSubject,
+        total
+    });
+};
+
+exports.find = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -45,7 +72,7 @@ exports.find = async(req, res) => {
     });
 }
 
-exports.update = async(req, res) => {
+exports.update = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
@@ -66,7 +93,7 @@ exports.update = async(req, res) => {
     });
 };
 
-exports.delete = async(req, res) => {
+exports.delete = async (req, res) => {
     const data = await Subject.findByIdAndDelete(req.params.idSubject)
     if (!data) {
         throw new HttpNotFound("Not found subject");
@@ -78,7 +105,7 @@ exports.delete = async(req, res) => {
 
 };
 
-exports.hideOrUnhide = async(req, res) => {
+exports.hideOrUnhide = async (req, res) => {
     const subject = await Subject.findById(req.params.idSubject)
     if (!subject) {
         throw new HttpNotFound("Not found subject");

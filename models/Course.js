@@ -5,7 +5,7 @@ const Schema = mongoose.Schema({
         type: String,
         required: [true, 'Name of course is required']
     },
-    isDeleted: {
+    isCurrent: {
         type: Boolean,
         default: false
     }

@@ -4,5 +4,6 @@ module.exports = {
     CONFIG_ADMIN: "code emailAddress idPrivilege firstName lastName urlAvatar status",
     STATUS: "status",
     AUTH: "idPrivilege emailAddress",
-    LOGIN: "emailAddress firstName lastName urlAvatar isNotify facebookId"
+    LOGIN: "emailAddress firstName lastName urlAvatar isNotify facebookId",
+    STATISTIC: "emailAddress firstName lastName urlAvatar status createdAt"
 }

@@ -41,7 +41,7 @@ const UserSchema = mongoose.Schema({
         unique: [true, `Email address is existed`],
         lowercase: true,
         validate: function(value) {
-            if (this.idPrivilege !== 'admin' || this.idPrivilege !== 'register') {
+            if (this.idPrivilege !== 'admin' && this.idPrivilege !== 'register') {
                 if (!validator.isEmail(value)) {
                     throw new ValidatorError({ message: 'Invalid Email address' });
                 } else if (!value.split('@').pop().includes('hcmute.edu.vn')) {

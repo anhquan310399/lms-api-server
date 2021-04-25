@@ -5,6 +5,8 @@ const surveyBank = require('./SurveyBank');
 const User = mongoose.model('User');
 const Course = mongoose.model('Course');
 var ValidatorError = mongoose.Error.ValidatorError;
+const STATUS = require('../constants/AccountStatus');
+const PRIVILEGES = require('../constants/PrivilegeCode');
 
 const ratioSchema = new mongoose.Schema({
     idField: {
@@ -41,7 +43,7 @@ const Schema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Course',
         required: [true, 'Id course is required'],
-        validate: function(value) {
+        validate: function (value) {
             Course.findById(value)
                 .then(course => {
                     if (!course) {
@@ -62,8 +64,12 @@ const Schema = mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: [true, 'Id lecture is required'],
-        validate: function(value) {
-            User.findOne({ _id: value, idPrivilege: 'teacher' })
+        validate: function (value) {
+            User.findOne({
+                _id: value,
+                idPrivilege: PRIVILEGES.TEACHER,
+                status: STATUS.ACTIVATED
+            })
                 .then(teacher => {
                     if (!teacher) {
                         throw new ValidatorError({
@@ -83,12 +89,12 @@ const Schema = mongoose.Schema({
         type: [mongoose.Schema.Types.ObjectId],
         ref: 'User',
         default: [],
-        validate: async function(list) {
-            await Promise.all(list.map(async(idStudent) => {
+        validate: async function (list) {
+            await Promise.all(list.map(async (idStudent) => {
                 const student = await User.findOne({
-                    isDeleted: false,
-                    idPrivilege: 'student',
-                    _id: idStudent
+                    _id: idStudent,
+                    idPrivilege: PRIVILEGES.STUDENT || PRIVILEGES.REGISTER,
+                    status: STATUS.ACTIVATED
                 });
                 if (!student) {
                     throw new ValidatorError({

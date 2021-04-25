@@ -4,7 +4,7 @@ const { findTimeline, findSurvey, findSurveyBank } = require('../../services/Dat
 const moment = require('moment');
 const PRIVILEGES = require("../../constants/PrivilegeCode");
 
-exports.create = async(req, res) => {
+exports.create = async (req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const data = req.body.data;
@@ -25,13 +25,13 @@ exports.create = async(req, res) => {
     });
 };
 
-exports.find = async(req, res) => {
+exports.find = async (req, res) => {
     const subject = req.subject;
     const { survey } = findSurvey(subject, req);
     const today = new Date();
     const isRemain = today > survey.expireTime ? false : true;
     const timeRemain = moment(survey.expireTime).from(moment(today));
-    if (req.user.idPrivilege === PRIVILEGES.STUDENT) {
+    if (req.user.idPrivilege === PRIVILEGES.STUDENT || req.user.idPrivilege === PRIVILEGES.REGISTER) {
         const reply = survey.responses.find(value => value.idStudent.equals(req.user._id));
         res.json({
             success: true,
@@ -62,7 +62,7 @@ exports.find = async(req, res) => {
 
 }
 
-exports.findUpdate = async(req, res) => {
+exports.findUpdate = async (req, res) => {
     const subject = req.subject;
 
     const { survey } = findSurvey(subject, req);
@@ -80,7 +80,7 @@ exports.findUpdate = async(req, res) => {
     })
 }
 
-exports.findAll = async(req, res) => {
+exports.findAll = async (req, res) => {
     const subject = req.subject;
 
     const timeline = findTimeline(subject, req);
@@ -94,7 +94,7 @@ exports.findAll = async(req, res) => {
 
 }
 
-exports.update = async(req, res) => {
+exports.update = async (req, res) => {
     const subject = req.subject;
     const { survey } = findSurvey(subject, req);
     const data = req.body.data;
@@ -120,7 +120,7 @@ exports.update = async(req, res) => {
 
 }
 
-exports.hideOrUnhide = async(req, res) => {
+exports.hideOrUnhide = async (req, res) => {
     const subject = req.subject;
 
     const { survey } = findSurvey(subject, req);
@@ -128,7 +128,7 @@ exports.hideOrUnhide = async(req, res) => {
     survey.isDeleted = !survey.isDeleted;
 
     await subject.save()
-    const message = `${survey.isDeleted?'Hide':'Unhide'} survey ${survey.name} successfully!`;
+    const message = `${survey.isDeleted ? 'Hide' : 'Unhide'} survey ${survey.name} successfully!`;
     res.send({
         success: true,
         message: message,
@@ -136,7 +136,7 @@ exports.hideOrUnhide = async(req, res) => {
     })
 }
 
-exports.delete = async(req, res) => {
+exports.delete = async (req, res) => {
     const subject = req.subject;
 
     const { survey, timeline } = findSurvey(subject, req);
@@ -151,7 +151,7 @@ exports.delete = async(req, res) => {
     })
 }
 
-exports.attemptSurvey = async(req, res) => {
+exports.attemptSurvey = async (req, res) => {
     const subject = req.subject;
 
     const { survey } = findSurvey(subject, req);
@@ -172,7 +172,7 @@ exports.attemptSurvey = async(req, res) => {
     })
 }
 
-exports.replySurvey = async(req, res) => {
+exports.replySurvey = async (req, res) => {
     const subject = req.subject;
 
     const { survey } = findSurvey(subject, req);
@@ -198,7 +198,7 @@ exports.replySurvey = async(req, res) => {
     });
 }
 
-exports.viewResponse = async(req, res) => {
+exports.viewResponse = async (req, res) => {
     const subject = req.subject;
 
     const { survey } = findSurvey(subject, req);
@@ -221,17 +221,17 @@ exports.viewResponse = async(req, res) => {
     })
 }
 
-exports.viewAllResponse = async(req, res) => {
+exports.viewAllResponse = async (req, res) => {
     const subject = req.subject;
 
     const { survey } = findSurvey(subject, req);
 
     const questionnaire = subject.surveyBank
         .find(value => value._id.equals(survey.code)).questions;
-    const result = await Promise.all(questionnaire.map(async(question) => {
+    const result = await Promise.all(questionnaire.map(async (question) => {
         let answer;
         if (question.typeQuestion === 'choice') {
-            answer = await Promise.all(question.answer.map(async(answer) => {
+            answer = await Promise.all(question.answer.map(async (answer) => {
                 let count = 0;
                 survey.responses.forEach(reply => {
                     reply.answerSheet.forEach(answerSheet => {
@@ -252,7 +252,7 @@ exports.viewAllResponse = async(req, res) => {
                 }
             }))
         } else if (question.typeQuestion === 'multiple') {
-            answer = await Promise.all(question.answer.map(async(answer) => {
+            answer = await Promise.all(question.answer.map(async (answer) => {
                 let count = 0;
                 survey.responses.forEach(reply => {
                     reply.answerSheet.forEach(answerSheet => {

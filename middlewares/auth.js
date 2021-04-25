@@ -12,11 +12,11 @@ exports.authStudentInSubject = (req, res, next) => {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
-                _id: data._id,
-                idPrivilege: PRIVILEGES.STUDENT || PRIVILEGES.REGISTER,
-                status: STATUS.ACTIVATED
-            }, DETAILS.AUTH)
-            .then(async(user) => {
+            _id: data._id,
+            status: STATUS.ACTIVATED,
+            $or: [{ idPrivilege: PRIVILEGES.STUDENT }, { idPrivilege: PRIVILEGES.REGISTER, }]
+        }, DETAILS.AUTH)
+            .then(async (user) => {
                 if (!user) {
                     next(new HttpUnauthorized());
                 }
@@ -46,14 +46,15 @@ exports.authLectureInSubject = (req, res, next) => {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
-                _id: data._id,
-                idPrivilege: PRIVILEGES.TEACHER,
-                status: STATUS.ACTIVATED
-            }, DETAILS.AUTH)
-            .then(async(user) => {
+            _id: data._id,
+            idPrivilege: PRIVILEGES.TEACHER,
+            status: STATUS.ACTIVATED
+        }, DETAILS.AUTH)
+            .then(async (user) => {
                 if (!user) {
                     next(new HttpUnauthorized());
                 }
+                console.log(user);
                 const idSubject = req.params.idSubject || req.query.idSubject || req.body.idSubject;
 
                 const subject = await Subject.findOne({ _id: idSubject, idLecture: user._id })
@@ -80,10 +81,10 @@ exports.authInSubject = (req, res, next) => {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
-                _id: data._id,
-                status: STATUS.ACTIVATED
-            }, DETAILS.AUTH)
-            .then(async(user) => {
+            _id: data._id,
+            status: STATUS.ACTIVATED
+        }, DETAILS.AUTH)
+            .then(async (user) => {
                 if (!user) {
                     next(new HttpUnauthorized());
                 }
@@ -118,10 +119,10 @@ exports.authStudent = (req, res, next) => {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
-                _id: data._id,
-                idPrivilege: PRIVILEGES.STUDENT || PRIVILEGES.REGISTER,
-                status: STATUS.ACTIVATED
-            }, DETAILS.AUTH)
+            _id: data._id,
+            status: STATUS.ACTIVATED,
+            $or: [{ idPrivilege: PRIVILEGES.STUDENT }, { idPrivilege: PRIVILEGES.REGISTER, }]
+        }, DETAILS.AUTH)
             .then((user) => {
                 if (!user) {
                     next(new HttpUnauthorized());
@@ -144,10 +145,10 @@ exports.authLecture = (req, res, next) => {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
-                _id: data._id,
-                idPrivilege: PRIVILEGES.TEACHER,
-                status: STATUS.ACTIVATED
-            }, DETAILS.AUTH)
+            _id: data._id,
+            idPrivilege: PRIVILEGES.TEACHER,
+            status: STATUS.ACTIVATED
+        }, DETAILS.AUTH)
             .then((user) => {
                 if (!user) {
                     next(new HttpUnauthorized());
@@ -170,9 +171,9 @@ exports.authLogin = (req, res, next) => {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
-                _id: data._id,
-                status: STATUS.ACTIVATED
-            }, DETAILS.LOGIN)
+            _id: data._id,
+            status: STATUS.ACTIVATED
+        })
             .then((user) => {
                 if (!user) {
                     next(new HttpUnauthorized());
@@ -195,10 +196,12 @@ exports.authUser = (req, res, next) => {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
-                _id: data._id,
-                status: STATUS.ACTIVATED,
-                idPrivilege: PRIVILEGES.STUDENT || PRIVILEGES.TEACHER || PRIVILEGES.REGISTER
-            }, DETAILS.AUTH)
+            _id: data._id,
+            status: STATUS.ACTIVATED,
+            $or: [{ idPrivilege: PRIVILEGES.STUDENT },
+            { idPrivilege: PRIVILEGES.REGISTER, },
+            { idPrivilege: PRIVILEGES.TEACHER, }]
+        }, DETAILS.AUTH)
             .then((user) => {
                 if (!user) {
                     next(new HttpUnauthorized());
@@ -221,9 +224,10 @@ exports.authAdmin = (req, res, next) => {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
-                _id: data._id,
-                idPrivilege: PRIVILEGES.ADMIN
-            }, DETAILS.AUTH)
+            _id: data._id,
+            idPrivilege: PRIVILEGES.ADMIN,
+            status: STATUS.ACTIVATED,
+        }, DETAILS.AUTH)
             .then((user) => {
                 if (!user) {
                     next(new HttpUnauthorized());

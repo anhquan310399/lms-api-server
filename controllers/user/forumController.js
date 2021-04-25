@@ -2,7 +2,7 @@ const { getCommonData, getCommonInfoTopic } = require('../../services/DataMapper
 const { findTimeline, findForum } = require('../../services/DataSearcher');
 const PRIVILEGES = require("../../constants/PrivilegeCode");
 
-exports.create = async(req, res) => {
+exports.create = async (req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const model = {
@@ -23,7 +23,7 @@ exports.create = async(req, res) => {
     });
 };
 
-exports.find = async(req, res) => {
+exports.find = async (req, res) => {
     const subject = req.subject;
     const { forum } = findForum(subject, req);
     const topics = await Promise.all(forum.topics.map(async value => {
@@ -38,7 +38,7 @@ exports.find = async(req, res) => {
 
 };
 
-exports.findUpdate = async(req, res) => {
+exports.findUpdate = async (req, res) => {
     const subject = req.subject;
     const { forum } = findForum(subject, req);
 
@@ -53,7 +53,7 @@ exports.findUpdate = async(req, res) => {
     })
 };
 
-exports.findAll = async(req, res) => {
+exports.findAll = async (req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);
     const index = subject.timelines.indexOf(timeline);
@@ -61,12 +61,12 @@ exports.findAll = async(req, res) => {
     let forums = subject.timelines[index].forums;
 
     forums = forums.reduce((res, value) => {
-        if (!(value.isDeleted && req.user.idPrivilege === PRIVILEGES.STUDENT)) {
+        if (!(value.isDeleted && req.user.idPrivilege !== PRIVILEGES.TEACHER)) {
             res.push({
                 _id: value._id,
                 name: value.name,
                 description: value.description,
-                isDeleted: req.user.idPrivilege === PRIVILEGES.STUDENT ? undefined : value.isDeleted
+                isDeleted: req.user.idPrivilege !== PRIVILEGES.TEACHER ? undefined : value.isDeleted
             })
         }
         return res;
@@ -77,7 +77,7 @@ exports.findAll = async(req, res) => {
     })
 };
 
-exports.update = async(req, res) => {
+exports.update = async (req, res) => {
     const subject = req.subject;
     const { forum } = findForum(subject, req);
     const data = req.body.data;
@@ -98,7 +98,7 @@ exports.update = async(req, res) => {
     });
 };
 
-exports.hideOrUnhide = async(req, res) => {
+exports.hideOrUnhide = async (req, res) => {
     const subject = req.subject;
     const { forum } = findForum(subject, req);
     forum.isDeleted = !forum.isDeleted;
@@ -107,12 +107,12 @@ exports.hideOrUnhide = async(req, res) => {
 
     res.send({
         success: true,
-        message: `${forum.isDeleted?"Hide":"Unhide"} forum ${forum.name} successfully!`,
+        message: `${forum.isDeleted ? "Hide" : "Unhide"} forum ${forum.name} successfully!`,
         forum: getCommonData(forum)
     });
 };
 
-exports.delete = async(req, res) => {
+exports.delete = async (req, res) => {
     const subject = req.subject;
     const { timeline, forum } = findForum(subject, req);
     const index = timeline.forums.indexOf(forum);

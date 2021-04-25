@@ -2,7 +2,9 @@ const isToday = require('../common/isToday');
 const _ = require('lodash');
 const mongoose = require("mongoose");
 const User = mongoose.model("User");
+const Course = mongoose.model("Course");
 const DETAILS = require('../constants/AccountDetail');
+const moment = require('moment');
 
 const getCommonData = (object, isStudent) => {
     return {
@@ -81,32 +83,32 @@ const getDetailTimeline = (timeline, isStudent) => {
     };
 }
 
-const filterTimelines = async(timelines, isStudent) => {
+const filterTimelines = async (timelines, isStudent) => {
     if (isStudent) {
         timelines = timelines.filter((value) => {
             return !value.isDeleted;
         });
     }
 
-    const res = _.sortBy(await Promise.all(timelines.map(async(timeline) => {
+    const res = _.sortBy(await Promise.all(timelines.map(async (timeline) => {
         return getDetailTimeline(timeline, isStudent);
     })), ['index']);
     return res;
 }
 
-const getListAssignmentAndExam = async(subject, today) => {
+const getListAssignmentAndExam = async (subject, today) => {
     let assignmentOrExam = await (subject.timelines.reduce(
-        async(preField, currentTimeline) => {
+        async (preField, currentTimeline) => {
             if (currentTimeline.isDeleted) {
                 let result = await preField;
                 return result;
             } else {
-                let exams = await Promise.all(currentTimeline.exams.map(async(exam) => {
+                let exams = await Promise.all(currentTimeline.exams.map(async (exam) => {
                     if (exam.isDeleted) {
                         return null;
                     }
                     let exists = [];
-                    let submissions = await exam.submissions.reduce(function(prePromise, submission) {
+                    let submissions = await exam.submissions.reduce(function (prePromise, submission) {
                         let exist = exists.find(value => value.idStudent.equals(submission.idStudent));
                         if (exist) {
                             let existSubmission = prePromise[exist.index];
@@ -137,12 +139,12 @@ const getListAssignmentAndExam = async(subject, today) => {
                     }
                 }));
 
-                let assignments = await Promise.all(currentTimeline.assignments.map(async(assignment) => {
+                let assignments = await Promise.all(currentTimeline.assignments.map(async (assignment) => {
                     if (assignment.isDeleted) {
                         return null;
                     }
 
-                    const submissions = await Promise.all(assignment.submissions.map(async(submission) => {
+                    const submissions = await Promise.all(assignment.submissions.map(async (submission) => {
                         return {
                             // _id: submission._id,
                             idStudent: submission.idStudent,
@@ -175,9 +177,9 @@ const getListAssignmentAndExam = async(subject, today) => {
     return assignmentOrExam;
 }
 
-const getTimelineExport = async(timelines) => {
-    const result = await Promise.all(timelines.map(async(timeline) => {
-        let surveys = await Promise.all(timeline.surveys.map(async(survey) => {
+const getTimelineExport = async (timelines) => {
+    const result = await Promise.all(timelines.map(async (timeline) => {
+        let surveys = await Promise.all(timeline.surveys.map(async (survey) => {
             return {
                 name: survey.name,
                 description: survey.description,
@@ -229,8 +231,8 @@ const getTimelineExport = async(timelines) => {
     return _.sortBy(result, ['index']);
 }
 
-const getSurveyBankExport = async(surveyBank) => {
-    return await Promise.all(surveyBank.map(async(questionnaire) => {
+const getSurveyBankExport = async (surveyBank) => {
+    return await Promise.all(surveyBank.map(async (questionnaire) => {
         const questions = questionnaire.questions.map(question => {
             if (question.typeQuestion === 'choice' || question.typeQuestion === 'multiple') {
                 const answers = question.answer.map(answer => {
@@ -256,8 +258,8 @@ const getSurveyBankExport = async(surveyBank) => {
     }))
 }
 
-const getQuizBankExport = async(quizBank) => {
-    return await Promise.all(quizBank.map(async(questionnaire) => {
+const getQuizBankExport = async (quizBank) => {
+    return await Promise.all(quizBank.map(async (questionnaire) => {
         const questions = questionnaire.questions.map((question) => {
             const answers = question.answers.map(option => {
                 return {
@@ -344,7 +346,7 @@ const getDeadlineOfSubject = (subject, student) => {
     return deadline;
 }
 
-const getCommonInfoTopic = async(topic) => {
+const getCommonInfoTopic = async (topic) => {
     const creator = await User.findById(topic.idUser, DETAILS.COMMON);
     return {
         _id: topic._id,
@@ -357,7 +359,7 @@ const getCommonInfoTopic = async(topic) => {
 
 }
 
-const getDetailComment = async(comment) => {
+const getDetailComment = async (comment) => {
     let creator = await User.findById(comment.idUser, DETAILS.COMMON)
     return {
         _id: comment._id,
@@ -376,22 +378,35 @@ const getInfoQuestionBank = (bank) => {
     }
 }
 
-const getDetailMessage = async(message) => {
-    let user = await User.findById(message.idUser, DETAILS.COMMON)
+const getDetailMessage = async (message) => {
+    let time = null;
+    if (isToday(message.createdAt)) {
+        time = moment(message.createdAt).format('hh:mm a');
+    } else {
+        var duration = moment.duration(moment().diff(message.createdAt));
+        var days = duration.asDays();
+        time = moment().subtract(days, 'days').calendar();
+    }
+    const user = await User.findById(message.idUser, DETAILS.COMMON)
     return {
         _id: message._id,
         user,
-        message: message.message
+        message: message.message,
+        time: time,
     }
 }
 
-const getSubjectByAdmin = async(subject) => {
+const getSubjectByAdmin = async (subject) => {
     const teacher = await User.findById(subject.idLecture, DETAILS.COMMON);
+    const course = await Course.findById(subject.idCourse, "name");
     return {
         _id: subject._id,
         name: subject.name,
         lecture: teacher,
+        course,
         studentCount: subject.studentIds.length,
+        idCourse: subject.idCourse,
+        config: subject.config,
         isDeleted: subject.isDeleted
     }
 }

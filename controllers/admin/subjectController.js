@@ -10,7 +10,6 @@ exports.create = async (req, res) => {
         idCourse: req.body.idCourse,
         config: req.body.config,
         idLecture: req.body.idLecture,
-        studentIds: req.body.studentIds
     });
 
     await subject.save();
@@ -82,7 +81,6 @@ exports.update = async (req, res) => {
     subject.config = req.body.config || subject.config;
     subject.idCourse = req.body.idCourse || subject.idCourse;
     subject.idLecture = req.body.idLecture || subject.idLecture;
-    subject.studentIds = req.body.studentIds || subject.studentIds;
 
     await subject.save();
 

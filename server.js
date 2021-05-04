@@ -71,11 +71,11 @@ io.on("connection", (socket) => {
 
     socket.on("join-chat", ({ chatroomId }) => {
         socket.join(chatroomId);
-        console.log("A user joined chatroom: " + chatroomId);
+        // console.log("A user joined chatroom: " + chatroomId);
 
         socket.on("leave", () => {
             socket.leave(chatroomId);
-            console.log("A user left chatroom: " + chatroomId);
+            // console.log("A user left chatroom: " + chatroomId);
         });
 
         socket.on("message", async ({ message }) => {
@@ -92,7 +92,7 @@ io.on("connection", (socket) => {
         });
         socket.on("disconnect", () => {
             socket.leave(chatroomId);
-            console.log("A user left chatroom: " + chatroomId);
+            // console.log("A user left chatroom: " + chatroomId);
         });
     });
 
@@ -103,17 +103,18 @@ io.on("connection", (socket) => {
         socket.on('message', async (message) => {
             message = {
                 idUser: socket.idUser,
-                message
+                message,
+                createdAt: new Date()
             }
             io.to(zoomId).emit('createMessage', await getDetailMessage(message))
         })
         socket.on('leave', () => {
-            console.log("A user left zoom: " + peerId);
+            // console.log("A user left zoom: " + peerId);
             socket.to(zoomId).emit('user-disconnected', peerId);
             socket.leave(zoomId);
         })
         socket.on('disconnect', () => {
-            console.log("A user left zoom: " + peerId);
+            // console.log("A user left zoom: " + peerId);
             io.to(zoomId).emit('user-disconnected', peerId);
             socket.leave(zoomId);
         })

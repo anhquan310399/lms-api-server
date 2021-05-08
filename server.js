@@ -71,29 +71,24 @@ io.on("connection", (socket) => {
 
     socket.on("join-chat", ({ chatroomId }) => {
         socket.join(chatroomId);
-        // console.log("A user joined chatroom: " + chatroomId);
+    });
 
-        socket.on("leave", () => {
-            socket.leave(chatroomId);
-            // console.log("A user left chatroom: " + chatroomId);
-        });
+    socket.on("chat", async ({ message, chatroomId }) => {
+        if (message.trim().length > 0) {
+            const newMessage = new Message({
+                idChatroom: chatroomId,
+                idUser: socket.idUser,
+                message,
+                createdAt: new Date()
+            });
+            const detailMessage = await getDetailMessage(newMessage)
+            io.to(chatroomId).emit("chatMessage", detailMessage);
+            await newMessage.save();
+        }
+    });
 
-        socket.on("message", async ({ message }) => {
-            if (message.trim().length > 0) {
-                const newMessage = new Message({
-                    idChatroom: chatroomId,
-                    idUser: socket.idUser,
-                    message,
-                    createdAt: new Date()
-                });
-                io.to(chatroomId).emit("newMessage", await getDetailMessage(newMessage));
-                await newMessage.save();
-            }
-        });
-        socket.on("disconnect", () => {
-            socket.leave(chatroomId);
-            // console.log("A user left chatroom: " + chatroomId);
-        });
+    socket.on("leave-chat", ({ chatroomId }) => {
+        socket.leave(chatroomId);
     });
 
     socket.on('join-zoom', (zoomId, peerId) => {

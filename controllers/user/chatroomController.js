@@ -5,6 +5,9 @@ const Message = mongoose.model("Message");
 const { HttpUnauthorized, HttpNotFound } = require('../../utils/errors');
 const _ = require('lodash');
 const { getDetailMessage } = require('../../services/DataMapper');
+const DETAILS = require('../../constants/AccountDetail');
+const STATUS = require('../../constants/AccountStatus');
+
 exports.createChatroom = async (req, res) => {
     const { to } = req.body;
     const rooms = await Chatroom.find({ 'users.idUser': req.user._id });
@@ -31,9 +34,15 @@ exports.createChatroom = async (req, res) => {
         }]
     })
     await room.save();
+    const user = await User.findById(to);
     res.json({
         message: "Chatroom created!",
-        idChatroom: room._id
+        idChatroom: room._id,
+        room: {
+            _id: room._id,
+            name: user.firstName + " " + user.lastName,
+            image: user.urlAvatar,
+        }
     });
 };
 
@@ -42,12 +51,12 @@ exports.getAllChatrooms = async (req, res) => {
     const rooms = await Promise.all(chatrooms.map(async (room) => {
         const to = room.users.find(user => !user.idUser.equals(req.user._id));
         const user = await User.findById(to.idUser);
-        const message = (await Message.find({ idChatroom: room._id }).sort({ createdAt: -1 }))[0];
+        // const message = (await Message.find({ idChatroom: room._id }).sort({ createdAt: -1 }))[0];
         return {
             _id: room._id,
             name: user.firstName + " " + user.lastName,
             image: user.urlAvatar,
-            message: message ? message.message : ""
+            // message: message ? message.message : ""
         }
     }))
     res.json({
@@ -93,4 +102,24 @@ exports.getMessages = async (req, res) => {
     res.json({
         messages
     });
+}
+
+exports.searchNewContact = async (req, res) => {
+    const chatrooms = await Chatroom.find({ 'users.idUser': req.user._id });
+    const userIds = await Promise.all(chatrooms.map(async (room) => {
+        const user = room.users.find(user => !user.idUser.equals(req.user._id));
+        return user.idUser;
+    }));
+
+    const { searchText, current } = req.body;
+    const contacts = await User.find({
+        code: { $regex: new RegExp("^" + searchText.toLowerCase(), "i") },
+        status: STATUS.ACTIVATED,
+        _id: { "$nin": userIds }
+    },
+        DETAILS.COMMON).skip(current).limit(10);
+
+    res.json({
+        contacts
+    })
 }

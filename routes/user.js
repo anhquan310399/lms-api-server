@@ -4,7 +4,7 @@ const { catchErrors } = require("../handlers/errorHandlers");
 const userController = require("../controllers/user/userController");
 
 router.put('/', authLogin, catchErrors(userController.update));
-router.post('/register', authLogin, catchErrors(userController.register));
+router.post('/register', catchErrors(userController.register));
 router.get('/info', authLogin, catchErrors(userController.getInfo));
 router.put('/password', authLogin, catchErrors(userController.updatePassword));
 router.post('/password/forget', catchErrors(userController.requestResetPassword));

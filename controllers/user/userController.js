@@ -8,9 +8,9 @@ const STATUS = require('../../constants/AccountStatus');
 const { MailOptions } = require('../../utils/mailOptions');
 const { sendMail } = require('../../services/SendMail');
 
-exports.register = async(req, res) => {
+exports.register = async (req, res) => {
     const user = new User({
-        code: req.body.code,
+        code: req.body.username,
         password: req.body.password,
         idPrivilege: PRIVILEGES.REGISTER,
         emailAddress: req.body.emailAddress,
@@ -26,7 +26,7 @@ exports.register = async(req, res) => {
     });
 }
 
-exports.requestResetPassword = async(req, res) => {
+exports.requestResetPassword = async (req, res) => {
     const user = await User.findOne({ emailAddress: req.body.emailAddress });
     if (!user) {
         throw new HttpNotFound('Not found user with this email!');
@@ -40,15 +40,22 @@ exports.requestResetPassword = async(req, res) => {
         html: `Please follow this link to reset your password <a href="${url}">"${url}"</a>`
     })
     sendMail(mailOptions);
+    user.resetToken = token;
+    await user.save();
     res.json({
         success: true,
         message: 'Check your email to get link reset password!'
     })
 }
 
-exports.resetPassword = async(req, res) => {
+exports.resetPassword = async (req, res) => {
     const user = req.user;
+    const token = req.header('Authorization').replace('Bearer ', '');
+    if (user.resetToken !== token) {
+        throw new HttpUnauthorized('');
+    }
     user.password = req.body.password;
+    user.resetToken = null;
     await user.save();
     res.json({
         success: true,
@@ -57,7 +64,7 @@ exports.resetPassword = async(req, res) => {
 
 }
 
-exports.update = async(req, res) => {
+exports.update = async (req, res) => {
     const user = req.user;
     user.lastName = req.body.lastName || user.lastName;
     user.firstName = req.body.firstName || user.firstName;
@@ -70,7 +77,7 @@ exports.update = async(req, res) => {
     })
 };
 
-exports.updatePassword = async(req, res) => {
+exports.updatePassword = async (req, res) => {
     const user = req.user;
     const isAuth = user.comparePassword(req.body.password);
     if (!isAuth) {
@@ -84,7 +91,7 @@ exports.updatePassword = async(req, res) => {
     });
 };
 
-exports.authenticate = async(req, res) => {
+exports.authenticate = async (req, res) => {
     const user = await User.findOne({ code: req.body.code });
     if (!user) {
         throw new HttpNotFound('Authentication failed. User not found');
@@ -111,14 +118,14 @@ exports.authenticate = async(req, res) => {
     });
 }
 
-exports.getInfo = async(req, res) => {
+exports.getInfo = async (req, res) => {
     const user = req.user;
     res.json({
         info: await User.findById(user._id, DETAILS.DETAIL)
     });
 }
 
-exports.authenticateGoogleToken = async(req, res) => {
+exports.authenticateGoogleToken = async (req, res) => {
     const userToken = req.body.token
     const payload = await verifyGoogle(userToken);
     const userEmail = payload.email;
@@ -145,7 +152,7 @@ exports.authenticateGoogleToken = async(req, res) => {
     });
 }
 
-exports.authenticateFacebookToken = async(req, res) => {
+exports.authenticateFacebookToken = async (req, res) => {
     const userToken = req.body.token
     const payload = await verifyFacebook(userToken);
     if (!payload) {
@@ -173,7 +180,7 @@ exports.authenticateFacebookToken = async(req, res) => {
     });
 }
 
-exports.linkFacebookAccount = async(req, res) => {
+exports.linkFacebookAccount = async (req, res) => {
     const userToken = req.body.token
     if (req.user.facebookId) {
         throw new HttpUnauthorized('Your account has already linked facebook account!');
@@ -203,7 +210,7 @@ exports.linkFacebookAccount = async(req, res) => {
 
 }
 
-exports.unlinkFacebookAccount = async(req, res) => {
+exports.unlinkFacebookAccount = async (req, res) => {
     const user = req.user;
     if (!user.facebookId) {
         throw new HttpUnauthorized(`Your account hasn't already linked facebook!`)

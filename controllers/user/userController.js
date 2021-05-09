@@ -63,7 +63,7 @@ exports.requestResetPassword = async (req, res) => {
         to: user.emailAddress,
         html: `Please follow this link to reset your password <a href="${url}">"${url}"</a>`
     })
-    sendMail(mailOptions);
+    sendMail(mailOptions, true);
     user.resetToken = { token, date: new Date() };
     await user.save();
     res.json({

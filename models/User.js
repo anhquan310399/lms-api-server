@@ -79,7 +79,7 @@ const UserSchema = mongoose.Schema({
         },
         date: {
             type: Date,
-            default: new Date()
+            default: null,
         },
     }
 }, {

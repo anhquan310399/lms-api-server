@@ -13,12 +13,12 @@ const transporter = nodemailer.createTransport(smtpTransport({
     }
 }));
 
-const sendMail = (mailOptions) => {
+const sendMail = (mailOptions, force = false) => {
     User.findOne({ emailAddress: mailOptions.to },
-            'emailAddress isNotify')
+        'emailAddress isNotify')
         .then(to => {
-            if (to.isNotify) {
-                transporter.sendMail(mailOptions, function(error, info) {
+            if (to.isNotify || force) {
+                transporter.sendMail(mailOptions, function (error, info) {
                     if (error) {
                         console.log(error);
                     } else {

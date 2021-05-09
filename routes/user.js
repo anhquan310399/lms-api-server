@@ -7,6 +7,7 @@ router.put('/', authLogin, catchErrors(userController.update));
 router.post('/register', catchErrors(userController.register));
 router.get('/info', authLogin, catchErrors(userController.getInfo));
 router.put('/password', authLogin, catchErrors(userController.updatePassword));
+router.post('/account/forget', catchErrors(userController.getForgotPasswordAccount));
 router.post('/password/forget', catchErrors(userController.requestResetPassword));
 router.post('/password/reset', authLogin, catchErrors(userController.resetPassword));
 router.post('/authenticate', catchErrors(userController.authenticate));

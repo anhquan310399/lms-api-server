@@ -73,8 +73,14 @@ const UserSchema = mongoose.Schema({
         enum: [STATUS.ACTIVATED, STATUS.SUSPENDED, STATUS.NOT_ACTIVATED]
     },
     resetToken: {
-        type: String,
-        default: null,
+        token: {
+            type: String,
+            default: null,
+        },
+        date: {
+            type: Date,
+            default: new Date()
+        },
     }
 }, {
     timestamps: true,

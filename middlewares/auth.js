@@ -14,7 +14,8 @@ exports.authStudentInSubject = (req, res, next) => {
         User.findOne({
             _id: data._id,
             status: STATUS.ACTIVATED,
-            $or: [{ idPrivilege: PRIVILEGES.STUDENT }, { idPrivilege: PRIVILEGES.REGISTER, }]
+            $or: [{ idPrivilege: PRIVILEGES.STUDENT }, { idPrivilege: PRIVILEGES.REGISTER, }],
+
         }, DETAILS.AUTH)
             .then(async (user) => {
                 if (!user) {
@@ -48,7 +49,8 @@ exports.authLectureInSubject = (req, res, next) => {
         User.findOne({
             _id: data._id,
             idPrivilege: PRIVILEGES.TEACHER,
-            status: STATUS.ACTIVATED
+            status: STATUS.ACTIVATED,
+
         }, DETAILS.AUTH)
             .then(async (user) => {
                 if (!user) {
@@ -82,7 +84,8 @@ exports.authInSubject = (req, res, next) => {
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
             _id: data._id,
-            status: STATUS.ACTIVATED
+            status: STATUS.ACTIVATED,
+
         }, DETAILS.AUTH)
             .then(async (user) => {
                 if (!user) {
@@ -121,7 +124,8 @@ exports.authStudent = (req, res, next) => {
         User.findOne({
             _id: data._id,
             status: STATUS.ACTIVATED,
-            $or: [{ idPrivilege: PRIVILEGES.STUDENT }, { idPrivilege: PRIVILEGES.REGISTER, }]
+            $or: [{ idPrivilege: PRIVILEGES.STUDENT }, { idPrivilege: PRIVILEGES.REGISTER, }],
+
         }, DETAILS.AUTH)
             .then((user) => {
                 if (!user) {
@@ -147,7 +151,8 @@ exports.authLecture = (req, res, next) => {
         User.findOne({
             _id: data._id,
             idPrivilege: PRIVILEGES.TEACHER,
-            status: STATUS.ACTIVATED
+            status: STATUS.ACTIVATED,
+
         }, DETAILS.AUTH)
             .then((user) => {
                 if (!user) {
@@ -172,7 +177,8 @@ exports.authLogin = (req, res, next) => {
         const data = jwt.verify(token, process.env.JWT_KEY)
         User.findOne({
             _id: data._id,
-            status: STATUS.ACTIVATED
+            status: STATUS.ACTIVATED,
+
         })
             .then((user) => {
                 if (!user) {
@@ -200,7 +206,7 @@ exports.authUser = (req, res, next) => {
             status: STATUS.ACTIVATED,
             $or: [{ idPrivilege: PRIVILEGES.STUDENT },
             { idPrivilege: PRIVILEGES.REGISTER, },
-            { idPrivilege: PRIVILEGES.TEACHER, }]
+            { idPrivilege: PRIVILEGES.TEACHER, }],
         }, DETAILS.AUTH)
             .then((user) => {
                 if (!user) {

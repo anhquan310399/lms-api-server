@@ -7,6 +7,7 @@ const PRIVILEGES = require('../../constants/PrivilegeCode');
 const STATUS = require('../../constants/AccountStatus');
 const { MailOptions } = require('../../utils/mailOptions');
 const { sendMail } = require('../../services/SendMail');
+const moment = require("moment");
 
 exports.register = async (req, res) => {
     const user = new User({
@@ -26,21 +27,44 @@ exports.register = async (req, res) => {
     });
 }
 
+exports.getForgotPasswordAccount = async (req, res) => {
+    const { email } = req.body;
+    const account = await User.findOne({
+        emailAddress: email,
+        status: STATUS.ACTIVATED
+    }, DETAILS.ACCOUNT);
+    if (!account) {
+        throw new HttpNotFound();
+    }
+    res.json({
+        success: true,
+        account: account
+    })
+}
+
 exports.requestResetPassword = async (req, res) => {
     const user = await User.findOne({ emailAddress: req.body.emailAddress });
     if (!user) {
-        throw new HttpNotFound('Not found user with this email!');
+        throw new HttpNotFound('Search returns no results. Please try again with other information.');
     }
-    const token = user.generateAuthToken('1h');
+    const date = user.resetToken.date;
+    if (date) {
+        const duration = moment.duration(moment(new Date()).diff(date));
+        const minutes = duration.asMinutes();
+        if (minutes <= 30) {
+            throw new HttpUnauthorized('You do have to wait 30 minutes after each requesting to reset your password');
+        }
+    }
+    const token = user.generateAuthToken('30m');
+    const url = `${req.headers['origin']}/password/reset/${token}`;
 
-    const url = `https://www.facebook.com/?ssl=${token}`;
     const mailOptions = new MailOptions({
         subject: '[Account LMS HCMUTE] - Reset password',
         to: user.emailAddress,
         html: `Please follow this link to reset your password <a href="${url}">"${url}"</a>`
     })
     sendMail(mailOptions);
-    user.resetToken = token;
+    user.resetToken = { token, date: new Date() };
     await user.save();
     res.json({
         success: true,
@@ -51,11 +75,11 @@ exports.requestResetPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
     const user = req.user;
     const token = req.header('Authorization').replace('Bearer ', '');
-    if (user.resetToken !== token) {
-        throw new HttpUnauthorized('');
+    if (user.resetToken?.token !== token) {
+        throw new HttpUnauthorized('Your request has been expired!');
     }
     user.password = req.body.password;
-    user.resetToken = null;
+    user.resetToken = { ...user.resetToken, token: null };
     await user.save();
     res.json({
         success: true,
@@ -224,3 +248,4 @@ exports.unlinkFacebookAccount = async (req, res) => {
         message: `UnLink to facebook successfully!`
     });
 }
+

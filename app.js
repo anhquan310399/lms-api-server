@@ -21,6 +21,21 @@ app.use("/survey-bank", require("./routes/surveyBank"));
 app.use("/exam", require("./routes/exam"));
 app.use("/survey", require("./routes/survey"));
 
+const jwt = require('jsonwebtoken')
+app.get("/verify", (req, res) => {
+    try {
+        const token = req.header('Authorization').replace('Bearer ', '')
+        const data = jwt.verify(token, process.env.JWT_KEY)
+        res.json({
+            success: true
+        })
+    } catch (err) {
+        res.status(404).json({
+            success: false
+        })
+    }
+})
+
 //Setup Error Handlers
 const errorHandlers = require("./handlers/errorHandlers");
 app.use(errorHandlers.notFound);

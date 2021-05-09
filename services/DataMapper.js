@@ -411,6 +411,10 @@ const getSubjectByAdmin = async (subject) => {
     }
 }
 
+const getUserById = async (idUser, detail = DETAILS.COMMON) => {
+    return await User.findById(idUser, detail);
+}
+
 module.exports = {
     getSubjectByAdmin,
     getCommonData,
@@ -424,5 +428,6 @@ module.exports = {
     getCommonInfoTopic,
     getDetailComment,
     getInfoQuestionBank,
-    getDetailMessage
+    getDetailMessage,
+    getUserById
 }

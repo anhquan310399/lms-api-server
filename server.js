@@ -35,7 +35,7 @@ const jwt = require("jsonwebtoken");
 
 const Message = mongoose.model("Message");
 const User = mongoose.model("User");
-const { getDetailMessage } = require('./services/DataMapper');
+const { getDetailMessage, getUserById } = require('./services/DataMapper');
 
 io.use((socket, next) => {
     try {
@@ -56,6 +56,8 @@ const countOnlineUser = async () => {
         percent: (online * 100 / user).toFixed(0)
     });
 }
+
+const users = {};
 
 io.on("connection", (socket) => {
     countOnlineUser();
@@ -92,26 +94,50 @@ io.on("connection", (socket) => {
     });
 
     socket.on('join-zoom', (zoomId, peerId) => {
-        socket.join(zoomId)
-        socket.to(zoomId).emit('user-connected', peerId)
+        if (!users[zoomId]) { users[zoomId] = [] }
 
-        socket.on('message', async (message) => {
-            message = {
-                idUser: socket.idUser,
-                message,
-                createdAt: new Date()
-            }
-            io.to(zoomId).emit('createMessage', await getDetailMessage(message))
-        })
-        socket.on('leave', () => {
-            // console.log("A user left zoom: " + peerId);
-            socket.to(zoomId).emit('user-disconnected', peerId);
-            socket.leave(zoomId);
-        })
-        socket.on('disconnect', () => {
-            // console.log("A user left zoom: " + peerId);
-            io.to(zoomId).emit('user-disconnected', peerId);
-            socket.leave(zoomId);
-        })
+        const zoomUser = users[zoomId].find(value => value.userId === socket.idUser);
+
+        if (!zoomUser) {
+            users[zoomId] = [...users[zoomId], { peerId, userId: socket.idUser }];
+            socket.join(zoomId)
+            io.to(socket.id).emit('200');
+
+            getUserById(socket.idUser).then(user => {
+                socket.to(zoomId).emit('user-connected', peerId, user);
+            });
+
+            socket.on('get-user', (peerId) => {
+                const user = users[zoomId].find((user) => user.peerId === peerId);
+                getUserById(user.userId).then(user => {
+                    io.to(socket.id).emit('receive-user', user);
+                });
+            })
+
+            socket.on('message', async (message) => {
+                message = {
+                    idUser: socket.idUser,
+                    message,
+                    createdAt: new Date()
+                }
+                const newMessage = await getDetailMessage(message);
+                io.to(zoomId).emit('newMessage', newMessage)
+            })
+            socket.on('leave', () => {
+                //console.log("A user left zoom: " + peerId);
+                socket.to(zoomId).emit('user-disconnected', peerId);
+                socket.leave(zoomId);
+                users[zoomId] = users[zoomId].filter(({ userId }) => userId !== socket.idUser);
+
+            })
+            socket.on('disconnect', () => {
+                //console.log("A user disconnect zoom: " + peerId);
+                io.to(zoomId).emit('user-disconnected', peerId);
+                socket.leave(zoomId);
+                users[zoomId] = users[zoomId].filter(({ userId }) => userId !== socket.idUser);
+            })
+        } else {
+            io.to(socket.id).emit('403', 'You has already join room in another application!');
+        }
     })
 });

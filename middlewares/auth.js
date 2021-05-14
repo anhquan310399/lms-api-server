@@ -27,6 +27,7 @@ exports.authStudentInSubject = (req, res, next) => {
                 if (subject) {
                     req.subject = subject;
                     req.student = user;
+                    req.user = user;
                     next();
                 } else {
                     next(new HttpNotFound({ message: "Not found subject that you enroll" }));
@@ -63,9 +64,10 @@ exports.authLectureInSubject = (req, res, next) => {
                 if (subject) {
                     req.subject = subject;
                     req.lecture = user;
+                    req.user = user;
                     next();
                 } else {
-                    next(new HttpNotFound({ message: "Not found this subject" }));
+                    next(new HttpNotFound( "Not found this subject" ));
                 }
             })
             .catch((err) => {
@@ -104,7 +106,7 @@ exports.authInSubject = (req, res, next) => {
                     req.subject = subject;
                     next();
                 } else {
-                    next(new HttpNotFound({ message: "Not found this subject" }));
+                    next(new HttpNotFound( "Not found this subject" ));
                 }
             })
             .catch((err) => {
@@ -132,6 +134,7 @@ exports.authStudent = (req, res, next) => {
                     next(new HttpUnauthorized());
                 }
                 req.student = user;
+                req.user = user;
                 next();
             })
             .catch((err) => {
@@ -159,6 +162,7 @@ exports.authLecture = (req, res, next) => {
                     next(new HttpUnauthorized());
                 }
                 req.lecture = user;
+                req.user = user;
                 next();
             })
             .catch((err) => {

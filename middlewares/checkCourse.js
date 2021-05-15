@@ -12,9 +12,13 @@ exports.checkCourse = async (req, res, next) => {
         subject = req.subject;
     }
 
+    if (!subject) {
+        return next(new HttpNotFound("Not found subject"));
+    }
+
     const currentCourse = await getCurrentCourse();
     if (!currentCourse._id.equals(subject.idCourse)) {
-        next(new HttpUnauthorized("Subject was out of current course!"));
+        return next(new HttpUnauthorized("Subject was out of current course!"));
     }
     req.currentCourse = currentCourse;
     next();

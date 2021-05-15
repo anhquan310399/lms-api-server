@@ -7,12 +7,13 @@ const DETAILS = require("../../constants/AccountDetail");
 
 exports.create = async(req, res) => {
     const subject = req.subject;
-    const forum = findForum(subject, req);
+    const {forum} = findForum(subject, req);
     const model = {
         name: req.body.data.name,
         content: req.body.data.content,
         idUser: req.user._id
     };
+
     const length = forum.topics.push(model);
 
     await subject.save()

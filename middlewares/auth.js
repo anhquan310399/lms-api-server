@@ -57,7 +57,6 @@ exports.authLectureInSubject = (req, res, next) => {
                 if (!user) {
                     next(new HttpUnauthorized());
                 }
-                console.log(user);
                 const idSubject = req.params.idSubject || req.query.idSubject || req.body.idSubject;
 
                 const subject = await Subject.findOne({ _id: idSubject, idLecture: user._id })

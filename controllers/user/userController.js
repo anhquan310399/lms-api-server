@@ -19,6 +19,17 @@ exports.register = async (req, res) => {
         lastName: req.body.lastName,
         status: STATUS.NOT_ACTIVATED
     });
+
+    const temp = await User.findOne({ $or: [{ emailAddress: user.emailAddress }, { code: user.code }] });
+
+    if (temp) {
+        if (temp.emailAddress === user.emailAddress) {
+            throw new HttpBadRequest("Email address was already existed!")
+        } else if (temp.code === user.code) {
+            throw new HttpBadRequest("Username was already existed!")
+        }
+    }
+
     await user.save();
 
     res.json({

@@ -26,7 +26,7 @@ exports.getStatistic = async (req, res) => {
                 idPrivilege: PRIVILEGES.REGISTER
             }, DETAILS.STATISTIC)
             .sort({ createdAt: -1 })
-            .limit(6))
+            .limit(5))
             .map(user => {
                 var createdAt = moment(user.createdAt).format('DD MMMM HH:mm');
                 return {

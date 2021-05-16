@@ -252,7 +252,7 @@ exports.submitExam = async (req, res) => {
     const { submission, totalTime } = await checkSubmission(subject, exam, req.params.idSubmission, req.student._id);
     const data = req.body.data;
     submission.answers = submission.answers.map(value => {
-        let answer = data.find(answer => answer.idQuestion.equals(value.idQuestion));
+        let answer = data.find(answer => value.idQuestion.equals(answer.idQuestion));
         let idAnswer = answer ? answer.idAnswer : '';
         return {
             idQuestion: value.idQuestion,

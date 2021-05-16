@@ -66,7 +66,7 @@ exports.authLectureInSubject = (req, res, next) => {
                     req.user = user;
                     next();
                 } else {
-                    next(new HttpNotFound( "Not found this subject" ));
+                    next(new HttpNotFound("Not found this subject"));
                 }
             })
             .catch((err) => {
@@ -94,18 +94,21 @@ exports.authInSubject = (req, res, next) => {
                 }
                 const idSubject = req.params.idSubject || req.query.idSubject || req.body.idSubject;
 
-                let subject = null;
-                if (user.idPrivilege === PRIVILEGES.STUDENT) {
-                    subject = await Subject.findOne({ _id: idSubject, isDeleted: false, 'studentIds': user._id })
-                } else if (user.idPrivilege === PRIVILEGES.TEACHER) {
-                    subject = await Subject.findOne({ _id: idSubject, isDeleted: false, idLecture: user._id })
-                }
+                const subject = await Subject.findOne({
+                    _id: idSubject,
+                    isDeleted: false,
+                    $or: [{
+                        'studentIds': user._id
+                    }, {
+                        idLecture: user._id
+                    }]
+                })
                 if (subject) {
                     req.user = user;
                     req.subject = subject;
                     next();
                 } else {
-                    next(new HttpNotFound( "Not found this subject" ));
+                    next(new HttpNotFound("Not found this subject"));
                 }
             })
             .catch((err) => {

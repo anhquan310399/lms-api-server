@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const { HttpNotFound } = require('../../utils/errors');
 const { getDetailTimeline } = require('../../services/DataMapper');
-const { findTimeline } = require('../../services/DataSearcher');
+const { findTimeline } = require('../../services/DataSearcherThroughReq');
 
 exports.create = async(req, res) => {
     const subject = req.subject;

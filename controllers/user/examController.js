@@ -4,7 +4,7 @@ const _ = require('lodash');
 const moment = require('moment');
 const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../../utils/errors');
 const { getCommonData } = require('../../services/DataMapper');
-const { findTimeline, findQuizBank, findExam } = require('../../services/DataSearcher');
+const { findTimeline, findQuizBank, findExam } = require('../../services/DataSearcherThroughReq');
 const DETAILS = require("../../constants/AccountDetail");
 const PRIVILEGES = require("../../constants/PrivilegeCode");
 

@@ -36,6 +36,7 @@ const jwt = require("jsonwebtoken");
 const Message = mongoose.model("Message");
 const User = mongoose.model("User");
 const { getDetailMessage, getUserById } = require('./services/DataMapper');
+const { discussThroughSocket, isUserCanJoinRoom } = require('./services/SocketUtil');
 
 io.use((socket, next) => {
     try {
@@ -141,5 +142,33 @@ io.on("connection", (socket) => {
         } else {
             io.to(socket.id).emit('403', 'You has already join room in another application!');
         }
+    })
+
+
+    socket.on('join-topic', ({ idSubject, idTimeline, idForum, idTopic }) => {
+        isUserCanJoinRoom(idSubject, socket.idUser)
+            .then(isJoinable => {
+                if (isJoinable) {
+                    socket.join(idTopic);
+                }
+                else {
+                    io.to(socket.id).emit('not-accessible', "You can't join this topic");
+                }
+            });
+
+        socket.on('discuss', (message) => {
+            io.to(socket.id).emit('discuss-success');
+            if (message.trim().length > 0) {
+                discussThroughSocket(idSubject, idTimeline, idForum, idTopic, message, socket.idUser)
+                    .then(res => {
+                        if (res.success) {
+                            io.to(idTopic).emit("newDiscuss", res.discussion);
+                        } else {
+                            io.to(socket.id).emit('error', res.message);
+                        }
+                    });
+            }
+        });
+
     })
 });

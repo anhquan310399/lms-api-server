@@ -1,5 +1,5 @@
 const { getCommonData, getCommonInfoTopic } = require('../../services/DataMapper');
-const { findTimeline, findForum } = require('../../services/DataSearcher');
+const { findTimeline, findForum } = require('../../services/DataSearcherThroughReq');
 const PRIVILEGES = require("../../constants/PrivilegeCode");
 
 exports.create = async (req, res) => {

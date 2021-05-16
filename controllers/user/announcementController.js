@@ -1,5 +1,5 @@
 const { getCommonData } = require('../../services/DataMapper');
-const { findTimeline, findAnnouncement } = require('../../services/DataSearcher');
+const { findTimeline, findAnnouncement } = require('../../services/DataSearcherThroughReq');
 exports.create = async(req, res) => {
     const subject = req.subject;
     const timeline = findTimeline(subject, req);

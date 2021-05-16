@@ -1,6 +1,6 @@
 const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../../utils/errors');
 const { getCommonData } = require('../../services/DataMapper');
-const { findTimeline, findSurvey, findSurveyBank } = require('../../services/DataSearcher');
+const { findTimeline, findSurvey, findSurveyBank } = require('../../services/DataSearcherThroughReq');
 const moment = require('moment');
 const PRIVILEGES = require("../../constants/PrivilegeCode");
 

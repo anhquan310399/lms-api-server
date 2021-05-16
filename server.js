@@ -109,9 +109,11 @@ io.on("connection", (socket) => {
 
             socket.on('get-user', (peerId) => {
                 const user = users[zoomId].find((user) => user.peerId === peerId);
-                getUserById(user.userId).then(user => {
-                    io.to(socket.id).emit('receive-user', user);
-                });
+                if (user) {
+                    getUserById(user.userId).then(user => {
+                        io.to(socket.id).emit('receive-user', user);
+                    });
+                }
             })
 
             socket.on('message', async (message) => {

@@ -1,22 +1,24 @@
 const mongoose = require("mongoose");
+const schemaTitle = require("../constants/SchemaTitle");
+const { MessageValidate } = require("../constants/ValidationMessage");
 
 const message = new mongoose.Schema({
     idChatroom: {
         type: mongoose.Schema.Types.ObjectId,
-        required: "idChatroom is required!",
-        ref: "Chatroom",
+        required: MessageValidate.ID_CHATROOM,
+        ref: schemaTitle.CHATROOM,
     },
     idUser: {
         type: mongoose.Schema.Types.ObjectId,
-        required: "idUser is required!",
-        ref: "User",
+        required: MessageValidate.ID_USER,
+        ref: schemaTitle.USER,
     },
     message: {
         type: String,
-        required: "Message is required!",
+        required: MessageValidate.MESSAGE,
     },
 }, {
     timestamps: true
 });
 
-module.exports = mongoose.model("Message", message);
+module.exports = mongoose.model(schemaTitle.MESSAGES, message);

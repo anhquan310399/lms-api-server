@@ -1,11 +1,13 @@
 const mongoose = require("mongoose");
 
-const topicSchema = require("./Topic")
+const topicSchema = require("./Topic");
+
+const { ForumValidate } = require("../../constants/ValidationMessage");
 
 const forum = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Title of forum is required']
+        required: [true, ForumValidate.NAME]
     },
     description: String,
     topics: {

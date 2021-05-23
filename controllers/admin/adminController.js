@@ -1,22 +1,23 @@
 const mongoose = require("mongoose");
-const Subject = mongoose.model("Subject");
-const User = mongoose.model("User");
+const schemaTitle = require("../../constants/SchemaTitle");
+const Course = mongoose.model(schemaTitle.COURSE);
+const User = mongoose.model(schemaTitle.USER);
 const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
 const moment = require('moment');
 
-const { getCurrentCourse } = require('../../common/getCurrentCourse');
+const { getCurrentSemester: getCurrentCourse } = require('../../common/getCurrentSemester');
 
 exports.getStatistic = async (req, res) => {
     const teachers = (await User.find({
         idPrivilege: PRIVILEGES.TEACHER
-    })).length
+    }, '')).length
     const students = (await User.find({
         idPrivilege: PRIVILEGES.STUDENT
-    })).length
+    }, '')).length
     const registers = (await User.find({
         idPrivilege: PRIVILEGES.REGISTER
-    })).length
+    }, '')).length
 
     const total = teachers + students + registers;
 
@@ -39,11 +40,11 @@ exports.getStatistic = async (req, res) => {
                 };
             });
     const currentCourse = await getCurrentCourse();
-    const publicSubjects = (await Subject.find({
+    const publicSubjects = (await Course.find({
         idCourse: currentCourse._id,
         'config.role': 'public'
     })).length;
-    const privateSubjects = (await Subject.find({
+    const privateSubjects = (await Course.find({
         idCourse: currentCourse._id,
         'config.role': 'private'
     })).length;

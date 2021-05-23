@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const schemaTitle = require("../../constants/SchemaTitle");
 
 const studentAnswer = new mongoose.Schema({
     idQuestion: {
@@ -14,7 +15,7 @@ const studentAnswer = new mongoose.Schema({
 const studentAnswerSheet = new mongoose.Schema({
     idStudent: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: schemaTitle.USER,
         required: true
     },
     answers: {

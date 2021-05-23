@@ -1,22 +1,23 @@
 const mongoose = require("mongoose");
 
+const { FileValidate } = require("../../constants/ValidationMessage");
 
 const file = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'name of file is required!']
+        required: [true, FileValidate.NAME]
     },
     type: {
         type: String,
-        required: [true, 'type of file is required!']
+        required: [true, FileValidate.TYPE]
     },
     path: {
         type: String,
-        required: [true, 'path of file is required']
+        required: [true, FileValidate.PATH]
     },
     uploadDay: {
         type: Date,
-        default: new Date(),
+        required: true
     },
     isDeleted: {
         type: Boolean,

@@ -2,19 +2,23 @@ const mongoose = require("mongoose");
 
 const commentSchema = require("./Comment");
 
+const { TopicValidate } = require("../../constants/ValidationMessage");
+
+const schemaTitle = require("../../constants/SchemaTitle");
+
 const topicSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, "Title of Topic is required"]
+        required: [true, TopicValidate.NAME]
     },
     content: {
         type: String,
-        required: [true, "Content of Topic is required"]
+        required: [true, TopicValidate.CONTENT]
     },
     discussions: [commentSchema],
     idUser: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: schemaTitle.USER,
         required: true
     }
 }, { timestamps: true });

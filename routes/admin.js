@@ -1,9 +1,10 @@
 const router = require("express").Router();
 const { catchErrors } = require("../handlers/errorHandlers");
+const semesterCTL = require("../controllers/admin/semesterController");
 const courseCTL = require("../controllers/admin/courseController");
-const subjectCTL = require("../controllers/admin/subjectController");
 const privilegeCTL = require("../controllers/admin/privilegeController");
 const userCTL = require("../controllers/admin/userController");
+const facultyCTL = require("../controllers/admin/facultyController");
 const adminCTL = require("../controllers/admin/adminController");
 
 const { authAdmin } = require("../middlewares/auth")
@@ -11,26 +12,34 @@ const { authAdmin } = require("../middlewares/auth")
 router.get("/statistic", authAdmin, catchErrors(adminCTL.getStatistic));
 
 /**
- * Route for course controller
+ * Route for faculty controller
  */
-router.post("/course", authAdmin, catchErrors(courseCTL.create));
-router.post("/course/filter", authAdmin, catchErrors(courseCTL.filterCourses));
-router.get("/course", authAdmin, catchErrors(courseCTL.findAll));
-router.get("/course/:id", authAdmin, catchErrors(courseCTL.findById));
-router.put("/course/:id", authAdmin, catchErrors(courseCTL.update));
-router.put("/course/:id/force", authAdmin, catchErrors(courseCTL.setCurrentCourse));
+router.post("/faculty", authAdmin, catchErrors(facultyCTL.create));
+router.get("/faculty", authAdmin, catchErrors(facultyCTL.findAll));
+router.put("/faculty/:id", authAdmin, catchErrors(facultyCTL.update));
+router.delete("/faculty", authAdmin, catchErrors(facultyCTL.delete));
+router.put("/faculty/:id/lock", authAdmin, catchErrors(facultyCTL.lock));
 
 /**
- * Route for subject controller
+ * Route for semester controller
  */
-router.get('/subject/statistic', authAdmin, catchErrors(subjectCTL.getStatistic));
-router.post('/subject/filter', authAdmin, catchErrors(subjectCTL.filterSubjects));
-router.get('/subject', authAdmin, catchErrors(subjectCTL.findAll));
-router.post('/subject', authAdmin, catchErrors(subjectCTL.create));
-router.put('/subject/:idSubject', authAdmin, catchErrors(subjectCTL.update));
-router.put('/subject/:idSubject/hide', authAdmin, catchErrors(subjectCTL.hideOrUnhide));
-router.delete('/subject/:idSubject', authAdmin, catchErrors(subjectCTL.delete));
-router.get('/subject/:idSubject', authAdmin, catchErrors(subjectCTL.find));
+router.post("/semester", authAdmin, catchErrors(semesterCTL.create));
+router.post("/semester/filter", authAdmin, catchErrors(semesterCTL.filter));
+router.get("/semester", authAdmin, catchErrors(semesterCTL.findAll));
+router.get("/semester/:id", authAdmin, catchErrors(semesterCTL.findById));
+router.put("/semester/:id", authAdmin, catchErrors(semesterCTL.update));
+router.put("/semester/:id/force", authAdmin, catchErrors(semesterCTL.setCurrent));
+
+/**
+ * Route for course controller
+ */
+router.post('/course/filter', authAdmin, catchErrors(courseCTL.filterSubjects));
+router.get('/course', authAdmin, catchErrors(courseCTL.findAll));
+router.post('/course', authAdmin, catchErrors(courseCTL.create));
+router.put('/course/:id', authAdmin, catchErrors(courseCTL.update));
+router.put('/course/:id/hide', authAdmin, catchErrors(courseCTL.lock));
+router.delete('/course/:id', authAdmin, catchErrors(courseCTL.delete));
+router.get('/course/:id', authAdmin, catchErrors(courseCTL.find));
 
 /**
  * Route for privilege controller
@@ -44,7 +53,6 @@ router.delete("/privilege/:id", authAdmin, catchErrors(privilegeCTL.delete));
 /**
  * Route for user controller
  */
-router.get('/user/statistic', authAdmin, catchErrors(userCTL.getStatistics));
 router.get('/user/teacher', authAdmin, catchErrors(userCTL.findAllTeachers));
 router.post('/user/teacher', authAdmin, catchErrors(userCTL.filterTeachers));
 router.post('/user/student', authAdmin, catchErrors(userCTL.filterStudents));

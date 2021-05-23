@@ -6,11 +6,12 @@ const assignmentSchema = require("./Assignment");
 const examSchema = require("./Exam");
 const surveySchema = require("./Survey");
 const fileSchema = require("./File");
+const { TimelineValidate } = require("../../constants/ValidationMessage");
 
 const timeline = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Name of timeline is required']
+        required: [true, TimelineValidate.NAME]
     },
     description: String,
     surveys: [surveySchema],

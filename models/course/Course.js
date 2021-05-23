@@ -2,11 +2,13 @@ const mongoose = require("mongoose");
 const timelineSchema = require("./Timeline");
 const quizBank = require('./QuizBank');
 const surveyBank = require('./SurveyBank');
-const User = mongoose.model('User');
-const Course = mongoose.model('Course');
+const schemaTitle = require("../../constants/SchemaTitle");
+const User = mongoose.model(schemaTitle.USER);
+const Semester = mongoose.model(schemaTitle.SEMESTER);
 var ValidatorError = mongoose.Error.ValidatorError;
-const STATUS = require('../constants/AccountStatus');
-const PRIVILEGES = require('../constants/PrivilegeCode');
+const STATUS = require('../../constants/AccountStatus');
+const PRIVILEGES = require('../../constants/PrivilegeCode');
+const { CourseValidate } = require("../../constants/ValidationMessage");
 
 const ratioSchema = new mongoose.Schema({
     idField: {
@@ -22,10 +24,10 @@ const ratioSchema = new mongoose.Schema({
 const config = new mongoose.Schema({
     role: {
         type: String,
-        required: [true, 'Role of subject is required'],
+        required: [true, CourseValidate.ROLE],
         enum: {
             values: ['public', 'private'],
-            message: 'Role of subject is only public and private'
+            message: CourseValidate.ROLE_ENUM
         }
     },
     acceptEnroll: {
@@ -37,20 +39,20 @@ const config = new mongoose.Schema({
 const Schema = mongoose.Schema({
     name: {
         type: String,
-        required: [true, 'Name of subject is required']
+        required: [true, CourseValidate.NAME]
     },
-    idCourse: {
+    idSemester: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Course',
-        required: [true, 'Id course is required'],
-        validate: function (value) {
-            Course.findById(value)
+        ref: schemaTitle.SEMESTER,
+        required: [true, CourseValidate.ID_SEMESTER],
+        validate: function (id) {
+            Semester.findById(id)
                 .then(course => {
                     if (!course) {
                         throw new ValidatorError({
-                            message: 'Not found course',
+                            message: CourseValidate.NOT_FOUND_SEMESTER(id),
                             type: 'validate',
-                            path: 'idCourse'
+                            path: 'idSemester'
                         })
                     }
                 });
@@ -58,22 +60,22 @@ const Schema = mongoose.Schema({
     },
     config: {
         type: config,
-        required: [true, 'Config of subject is required']
+        required: [true, CourseValidate.CONFIG]
     },
-    idLecture: {
+    idTeacher: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: [true, 'Id lecture is required'],
-        validate: function (value) {
+        ref: schemaTitle.USER,
+        required: [true, CourseValidate.ID_TEACHER],
+        validate: function (id) {
             User.findOne({
-                _id: value,
+                _id: id,
                 idPrivilege: PRIVILEGES.TEACHER,
                 status: STATUS.ACTIVATED
             })
                 .then(teacher => {
                     if (!teacher) {
                         throw new ValidatorError({
-                            message: 'Not found teacher',
+                            message: CourseValidate.NOT_FOUND_TEACHER(id),
                             type: 'validate',
                             path: 'idLecture'
                         })
@@ -87,7 +89,7 @@ const Schema = mongoose.Schema({
     timelines: [timelineSchema],
     studentIds: {
         type: [mongoose.Schema.Types.ObjectId],
-        ref: 'User',
+        ref: schemaTitle.USER,
         default: [],
         validate: async function (list) {
             await Promise.all(list.map(async (idStudent) => {
@@ -98,7 +100,7 @@ const Schema = mongoose.Schema({
                 });
                 if (!student) {
                     throw new ValidatorError({
-                        message: `Not found student with id: ${idStudent}`,
+                        message: CourseValidate.NOT_FOUND_STUDENT(idStudent),
                         type: 'validate',
                         path: 'studentIds'
                     })
@@ -109,12 +111,12 @@ const Schema = mongoose.Schema({
     },
     enrollRequests: {
         type: [mongoose.Schema.Types.ObjectId],
-        ref: 'User',
+        ref: schemaTitle.USER,
         default: []
     },
     exitRequests: {
         type: [mongoose.Schema.Types.ObjectId],
-        ref: 'User',
+        ref: schemaTitle.USER,
         default: []
     },
     isDeleted: {
@@ -129,4 +131,4 @@ const Schema = mongoose.Schema({
     timestamps: true
 });
 
-module.exports = mongoose.model("Subject", Schema);
+module.exports = mongoose.model(schemaTitle.COURSE, Schema);

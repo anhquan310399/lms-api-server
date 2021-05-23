@@ -1,12 +1,13 @@
 const isToday = require('../common/isToday');
 const _ = require('lodash');
+const schemaTitle = require("../constants/SchemaTitle");
 const mongoose = require("mongoose");
-const User = mongoose.model("User");
-const Course = mongoose.model("Course");
+const User = mongoose.model(schemaTitle.USER);
+const Course = mongoose.model(schemaTitle.COURSE);
 const DETAILS = require('../constants/AccountDetail');
 const moment = require('moment');
 
-const getCommonData = (object, isStudent) => {
+const getCommonInfo = (object, isStudent) => {
     return {
         _id: object._id,
         name: object.name,
@@ -18,12 +19,51 @@ const getCommonData = (object, isStudent) => {
     }
 }
 
+const getConfigInfoOfCourse = async (course) => {
+    const teacher = await User.findById(course.idLecture, DETAILS.COMMON);
+    const semester = await Course.findById(course.idSemester, "name");
+    return {
+        _id: course._id,
+        name: course.name,
+        lecture: teacher,
+        semester,
+        studentCount: course.studentIds.length,
+        idSemester: course.idSemester,
+        config: course.config,
+        isDeleted: course.isDeleted
+    }
+}
+
+const getConfigInfoOfUser = (user) => {
+    const { _id,
+        code,
+        idPrivilege,
+        emailAddress,
+        firstName,
+        lastName,
+        status,
+        urlAvatar } = user
+
+    return {
+        _id,
+        code,
+        idPrivilege,
+        emailAddress,
+        firstName,
+        lastName,
+        status,
+        urlAvatar
+    }
+}
+
+// Not audit
+
 const getDetailTimeline = (timeline, isStudent) => {
     const forums = timeline.forums.reduce((preForums, currentForum) => {
         if (isStudent && currentForum.isDeleted) {
             return preForums;
         }
-        const forum = getCommonData(currentForum, isStudent);
+        const forum = getCommonInfo(currentForum, isStudent);
         return (preForums.concat(forum));
     }, []);
     const exams = timeline.exams.reduce((preExams, currentExam) => {
@@ -31,17 +71,17 @@ const getDetailTimeline = (timeline, isStudent) => {
             return preExams;
         }
 
-        const exam = getCommonData(currentExam, isStudent);
+        const exam = getCommonInfo(currentExam, isStudent);
         return (preExams.concat(exam));
     }, []);
     const announcements = timeline.announcements.map((announcement) => {
-        return getCommonData(announcement)
+        return getCommonInfo(announcement)
     });
     const assignments = timeline.assignments.reduce((preAssignments, currentAssignment) => {
         if (isStudent && currentAssignment.isDeleted) {
             return preAssignments;
         }
-        const assignment = getCommonData(currentAssignment, isStudent);
+        const assignment = getCommonInfo(currentAssignment, isStudent);
         return (preAssignments.concat(assignment));
     }, []);
     const surveys = timeline.surveys.reduce((preSurveys, currentSurvey) => {
@@ -49,7 +89,7 @@ const getDetailTimeline = (timeline, isStudent) => {
             return preSurveys;
         }
 
-        const survey = getCommonData(currentSurvey, isStudent);
+        const survey = getCommonInfo(currentSurvey, isStudent);
         return (preSurveys.concat(survey));
     }, []);
 
@@ -58,7 +98,7 @@ const getDetailTimeline = (timeline, isStudent) => {
             return preFiles;
         }
         const file = {
-            ...getCommonData(currentFile, isStudent),
+            ...getCommonInfo(currentFile, isStudent),
             name: currentFile.name,
             path: currentFile.path,
             type: currentFile.type,
@@ -396,28 +436,14 @@ const getDetailMessage = async (message) => {
     }
 }
 
-const getSubjectByAdmin = async (subject) => {
-    const teacher = await User.findById(subject.idLecture, DETAILS.COMMON);
-    const course = await Course.findById(subject.idCourse, "name");
-    return {
-        _id: subject._id,
-        name: subject.name,
-        lecture: teacher,
-        course,
-        studentCount: subject.studentIds.length,
-        idCourse: subject.idCourse,
-        config: subject.config,
-        isDeleted: subject.isDeleted
-    }
-}
-
 const getUserById = async (idUser, detail = DETAILS.COMMON) => {
     return await User.findById(idUser, detail);
 }
 
 module.exports = {
-    getSubjectByAdmin,
-    getCommonData,
+    getConfigInfoOfUser,
+    getConfigInfoOfCourse,
+    getCommonInfo,
     getDetailTimeline,
     filterTimelines,
     getListAssignmentAndExam,

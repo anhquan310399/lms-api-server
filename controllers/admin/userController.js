@@ -1,34 +1,27 @@
 const mongoose = require("mongoose");
-const User = mongoose.model("User");
+const schemaTitle = require("../../constants/SchemaTitle");
+const User = mongoose.model(schemaTitle.USER);
 const { HttpNotFound } = require('../../utils/errors');
 const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
 const STATUS = require('../../constants/AccountStatus');
 
-const getDetailConfigUser = (user) => {
-    const { _id,
-        code,
-        idPrivilege,
-        emailAddress,
-        firstName,
-        lastName,
-        status,
-        urlAvatar } = user
+const { getConfigInfoOfUser } = require('../../services/DataMapper');
 
-    return {
-        _id,
-        code,
-        idPrivilege,
-        emailAddress,
-        firstName,
-        lastName,
-        status,
-        urlAvatar
+const { AdminResponseMessages } = require('../../constants/ResponseMessages');
+const { UserResponseMessages } = AdminResponseMessages;
+
+const findUserById = async (id) => {
+    const user = await User.findById(id);
+
+    if (!user) {
+        throw new HttpNotFound(UserResponseMessages.NOT_FOUND_BY_ID(id));
     }
+    return user;
 }
 
 exports.create = async (req, res) => {
-    const user = new User({
+    const data = new User({
         code: req.body.code,
         idPrivilege: req.body.idPrivilege,
         emailAddress: req.body.emailAddress,
@@ -36,11 +29,11 @@ exports.create = async (req, res) => {
         lastName: req.body.lastName,
         status: req.body.status
     });
-    const data = await user.save();
+    const user = await data.save();
 
     res.json({
-        message: "Create new user successfully!",
-        user: getDetailConfigUser(data)
+        message: UserResponseMessages.CREATE_SUCCESS(user.idPrivilege),
+        user: getConfigInfoOfUser(user)
     });
 };
 
@@ -162,20 +155,16 @@ exports.findUser = async (req, res) => {
 };
 
 exports.lockUser = async (req, res) => {
-    const user = await User.findById(req.params.id);
+    const user = await findUserById(req.params.id);
 
-    if (!user) {
-        throw new HttpNotFound("Not found user");
-    }
     user.status = user.status !== STATUS.SUSPENDED
         ? STATUS.SUSPENDED : STATUS.NOT_ACTIVATED;
 
     await user.save();
-    const message = `${user.status !== STATUS.SUSPENDED ? 'Lock' : 'Unlock'} user "${user.lastName}" successfully!`;
 
     res.json({
         success: true,
-        message: message,
-        user: getDetailConfigUser(user)
+        message: UserResponseMessages.LOCK_MESSAGE(user),
+        user: getConfigInfoOfUser(user)
     });
 };

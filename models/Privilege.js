@@ -1,17 +1,19 @@
 const mongoose = require("mongoose");
+const schemaTitle = require("../constants/SchemaTitle");
+const { PrivilegeValidate } = require("../constants/ValidationMessage");
 
-const privilegeSchema = mongoose.Schema({
+const Schema = mongoose.Schema({
     role: {
         type: String,
         unique: true,
-        required: [true, 'role is required']
+        required: [true, PrivilegeValidate.ROLE]
     },
     name: {
         type: String,
         unique: true,
-        required: [true, 'name of privilege is required']
+        required: [true, PrivilegeValidate.NAME]
     }
 });
 
 
-module.exports = mongoose.model("Privilege", privilegeSchema);
+module.exports = mongoose.model(schemaTitle.PRIVILEGE, Schema);

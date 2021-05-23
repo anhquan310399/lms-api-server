@@ -1,16 +1,19 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const jwt = require('jsonwebtoken');
-const Privileges = mongoose.model('Privilege');
+const schemaTitle = require("../constants/SchemaTitle");
+const Privileges = mongoose.model(schemaTitle.PRIVILEGE);
+const { UserValidate } = require("../constants/ValidationMessage");
 const bcrypt = require('bcrypt');
 const ValidatorError = mongoose.Error.ValidatorError;
 const STATUS = require('../constants/AccountStatus');
 
+
 const UserSchema = mongoose.Schema({
     code: {
         type: String,
-        unique: [true, 'Code is existed!'],
-        required: [true, 'Code is required']
+        unique: [true, UserValidate.CODE],
+        required: [true, UserValidate.CODE_UNIQUE]
     },
     password: {
         type: String,
@@ -21,13 +24,13 @@ const UserSchema = mongoose.Schema({
     idPrivilege: {
         type: String,
         ref: 'Privilege',
-        required: [true, 'idPrivilege is required'],
-        validate: async function (value) {
-            await Privileges.findOne({ role: value })
+        required: [true, UserValidate.ID_PRIVILEGE],
+        validate: async function (role) {
+            await Privileges.findOne({ role: role })
                 .then(privilege => {
                     if (!privilege) {
                         throw new ValidatorError({
-                            message: 'Not found privilege',
+                            message: UserValidate.NOT_FOUND_PRIVILEGE(role),
                             type: 'validate',
                             path: 'idPrivilege'
                         })
@@ -37,30 +40,31 @@ const UserSchema = mongoose.Schema({
     },
     emailAddress: {
         type: String,
-        required: [true, 'Email address is required'],
-        unique: [true, `Email address is existed`],
+        required: [true, UserValidate.EMAIL],
+        unique: [true, UserValidate.EMAIL_UNIQUE],
         lowercase: true,
         validate: function (value) {
+            if (!validator.isEmail(value)) {
+                throw new ValidatorError({ message: UserValidate.EMAIL_INVALID });
+            }
             if (this.idPrivilege !== 'admin' && this.idPrivilege !== 'register') {
-                if (!validator.isEmail(value)) {
-                    throw new ValidatorError({ message: 'Invalid Email address' });
-                } else if (!value.split('@').pop().includes('hcmute.edu.vn')) {
-                    throw new ValidatorError({ message: 'Email address not in HCMUTE' });
+                if (!value.split('@').pop().includes('hcmute.edu.vn')) {
+                    throw new ValidatorError({ message: UserValidate.EMAIL_NOT_IN_SYSTEM });
                 }
             }
         }
     },
     firstName: {
         type: String,
-        required: [true, 'First name is required']
+        required: [true, UserValidate.FIRST_NAME]
     },
     lastName: {
         type: String,
-        required: [true, 'Last name is required']
+        required: [true, UserValidate.LAST_NAME]
     },
     urlAvatar: {
         type: String,
-        default: "http://simpleicon.com/wp-content/uploads/user1.png"
+        default: "https://lh3.googleusercontent.com/proxy/pP6SYNTP9OAboWZRDP8tcwvBhXTH19owC_vItvlEtdxiBSTSrbedCDIHSq_fC4vmAK6VrJ7WWttIGYGCTJVX6PCnvUo8HZ6h8xb01-gD5jietUlSL4RKTA"
     },
     facebookId: String,
     isNotify: {
@@ -69,7 +73,7 @@ const UserSchema = mongoose.Schema({
     },
     status: {
         type: String,
-        required: [true, 'Status of user account is required'],
+        required: [true, UserValidate.STATUS],
         enum: [STATUS.ACTIVATED, STATUS.SUSPENDED, STATUS.NOT_ACTIVATED]
     },
     resetToken: {
@@ -131,4 +135,4 @@ UserSchema.methods.generateAuthToken = function (expiresIn = '24h') {
 }
 
 
-module.exports = mongoose.model("User", UserSchema);
+module.exports = mongoose.model(schemaTitle.USER, UserSchema);

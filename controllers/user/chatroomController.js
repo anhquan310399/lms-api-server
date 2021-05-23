@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
-const Chatroom = mongoose.model("Chatroom");
-const User = mongoose.model("User");
-const Message = mongoose.model("Message");
+const schemaTitle = require("../../constants/SchemaTitle");
+const Chatroom = mongoose.model(schemaTitle.CHATROOM);
+const User = mongoose.model(schemaTitle.USER);
+const Message = mongoose.model(schemaTitle.MESSAGES);
 const { HttpUnauthorized, HttpNotFound } = require('../../utils/errors');
 const _ = require('lodash');
 const { getDetailMessage } = require('../../services/DataMapper');

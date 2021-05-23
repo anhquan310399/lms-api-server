@@ -21,8 +21,13 @@ require("./models/Privilege");
 require("./models/User");
 require("./models/ChatRoom");
 require("./models/Message");
-require("./models/Course");
-require("./models/Subject");
+require("./models/Semester");
+require("./models/course/Course");
+require("./models/curriculum/Class");
+require("./models/curriculum/Subject");
+require("./models/curriculum/Curriculum");
+require("./models/Faculty");
+// require("./models/Subject");
 
 const app = require("./app");
 

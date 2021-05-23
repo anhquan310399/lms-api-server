@@ -1,18 +1,20 @@
 const mongoose = require("mongoose");
-const User = mongoose.model("User");
+const schemaTitle = require("../constants/SchemaTitle");
+const User = mongoose.model(schemaTitle.USER);
 var ValidatorError = mongoose.Error.ValidatorError;
+const { ChatroomValidate } = require("../constants/ValidationMessage");
 
 const user = new mongoose.Schema({
     idUser: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: schemaTitle.USER,
         required: true,
-        validate: async function(value) {
-            await User.findById(value)
+        validate: async function (id) {
+            await User.findById(id)
                 .then(user => {
                     if (!user) {
                         throw new ValidatorError({
-                            message: 'Not found user',
+                            message: ChatroomValidate.NOT_FOUND_USER(id),
                             type: 'validate',
                             path: 'Chat room'
                         })
@@ -33,10 +35,10 @@ const chatroom = new mongoose.Schema({
     users: {
         type: [user],
         required: true,
-        validate: function(value) {
+        validate: function (value) {
             if (value.length <= 0) {
                 throw new ValidatorError({
-                    message: `Can't create room without user`,
+                    message: ChatroomValidate.CREATE_WITHOUT_USER,
                     type: 'validate',
                     path: 'Chat room'
                 })
@@ -45,4 +47,4 @@ const chatroom = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model("Chatroom", chatroom);
+module.exports = mongoose.model(schemaTitle.CHATROOM, chatroom);

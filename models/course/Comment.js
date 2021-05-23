@@ -1,13 +1,17 @@
 const mongoose = require("mongoose");
 
+const { CommentValidate } = require("../../constants/ValidationMessage");
+const schemaTitle = require("../../constants/SchemaTitle");
+
+
 const discussionSchema = new mongoose.Schema({
     content: {
         type: String,
-        required: [true, 'Content of comment is required!']
+        required: [true, CommentValidate.CONTENT]
     },
     idUser: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: schemaTitle.USER,
         required: true
     }
 }, { timestamps: true })

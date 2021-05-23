@@ -2,12 +2,15 @@ const mongoose = require("mongoose");
 const file = require('./File');
 const comment = require('./Comment');
 
+const { AssignmentValidate } = require("../../constants/ValidationMessage");
+const schemaTitle = require("../../constants/SchemaTitle");
+
 const feedBack = new mongoose.Schema({
     grade: {
         type: Number,
-        required: [true, "Grade is required!"],
-        min: [0, "Min grade is 0!"],
-        max: [10, "Max grade is 10!"]
+        required: [true, AssignmentValidate.GRADE],
+        min: [0, AssignmentValidate.GRADE_MIN],
+        max: [10, AssignmentValidate.GRADE_MAX]
     },
     gradeOn: {
         type: Date,
@@ -15,7 +18,7 @@ const feedBack = new mongoose.Schema({
     },
     gradeBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: schemaTitle.USER,
         required: true
     },
     comments: {
@@ -27,12 +30,12 @@ const feedBack = new mongoose.Schema({
 const submission = new mongoose.Schema({
     idStudent: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: schemaTitle.USER,
         required: true
     },
     file: {
         type: file,
-        required: [true, "Please attach file before uploading!"],
+        required: [true, AssignmentValidate.SUBMISSION_FILE],
     },
     submitTime: {
         type: Date,
@@ -44,14 +47,14 @@ const submission = new mongoose.Schema({
 const setting = new mongoose.Schema({
     startTime: {
         type: Date,
-        required: [true, "Start time of assignment is required"]
+        required: [true, AssignmentValidate.SETTING_START_TIME]
     },
     expireTime: {
         type: Date,
-        required: [true, "Expire time of assignment is required"],
+        required: [true, AssignmentValidate.SETTING_EXPIRE_TIME],
         validate: [function (value) {
             return value >= this.startTime
-        }, "Expire time must be more than start time"]
+        }, AssignmentValidate.SETTING_EXPIRE_TIME_VALID]
     },
     isOverDue: {
         type: Boolean,
@@ -61,19 +64,19 @@ const setting = new mongoose.Schema({
         type: Date,
         required: [function () {
             return this.isOverDue;
-        }, "Over due date is required"],
+        }, AssignmentValidate.SETTING_OVERDUE_DATE],
         validate: [function (value) {
             if (this.isOverDue) {
                 return value > this.expireTime
             } else {
                 return true
             }
-        }, "Over due date must be more than expire time"]
+        }, AssignmentValidate.SETTING_OVERDUE_DATE_VALID]
     },
     fileSize: {
         type: Number,
-        min: [5, "Min size of file is 5mb"],
-        max: [500, "Max size of file is 500mb"],
+        min: [5, AssignmentValidate.SETTING_FILE_SIZE_MIN],
+        max: [500, AssignmentValidate.SETTING_FILE_SIZE_MAX],
         default: 5
     }
 
@@ -82,18 +85,18 @@ const setting = new mongoose.Schema({
 const assignmentSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: [true, "Title of assignment is required"]
+        required: [true, AssignmentValidate.NAME]
     },
     content: {
         type: String,
-        required: [true, "Description of assignment is required"]
+        required: [true, AssignmentValidate.CONTENT]
     },
     attachments: {
         type: [file]
     },
     setting: {
         type: setting,
-        required: [true, "Setting of assignment is required"]
+        required: [true, AssignmentValidate.SETTING]
     },
     submissions: [submission],
     isDeleted: {
@@ -106,7 +109,6 @@ const assignmentSchema = new mongoose.Schema({
 assignmentSchema.pre('save', async function (next) {
     let currentAssignment = this;
     if (currentAssignment.isNew) {
-        console.log("Create new assignment!");
         let timeline = currentAssignment.parent();
         let subject = timeline.parent();
         if (!subject.transcript) {

@@ -87,7 +87,12 @@ const CourseValidate = {
     },
     NOT_FOUND_STUDENT(id) {
         return `Not found student with id: ${id}`
-    }
+    },
+    ID_SUBJECT: 'Id subject is required',
+    NOT_FOUND_SUBJECT(id) {
+        return `Not found subject with id - ${id}`
+    },
+    CODE: 'Code of course is required'
 }
 
 const TimelineValidate = {

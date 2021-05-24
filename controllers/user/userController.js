@@ -1,16 +1,19 @@
 const mongoose = require("mongoose");
-const User = mongoose.model("User");
+const schemaTitle = require("../../constants/SchemaTitle");
+const User = mongoose.model(schemaTitle.USER);
 const { verifyGoogle, verifyFacebook } = require('../../handlers/verifySocialHandler');
 const { HttpNotFound, HttpUnauthorized, HttpBadRequest, HttpInternalServerError } = require('../../utils/errors');
 const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
 const STATUS = require('../../constants/AccountStatus');
-const { MailOptions } = require('../../utils/mailOptions');
+const { MailOptions, MailTemplate } = require('../../utils/mailOptions');
 const { sendMail } = require('../../services/SendMail');
 const moment = require("moment");
+const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
+const { UserResponseMessages } = ClientResponsesMessages
 
 exports.register = async (req, res) => {
-    const user = new User({
+    const data = new User({
         code: req.body.username,
         password: req.body.password,
         idPrivilege: PRIVILEGES.REGISTER,
@@ -20,81 +23,78 @@ exports.register = async (req, res) => {
         status: STATUS.NOT_ACTIVATED
     });
 
-    const temp = await User.findOne({ $or: [{ emailAddress: user.emailAddress }, { code: user.code }] });
+    const user = await User.findOne({ $or: [{ emailAddress: data.emailAddress }, { code: data.code }] });
 
-    if (temp) {
-        if (temp.emailAddress === user.emailAddress) {
-            throw new HttpBadRequest("Email address was already existed!")
-        } else if (temp.code === user.code) {
-            throw new HttpBadRequest("Username was already existed!")
+    if (user) {
+        if (user.emailAddress === data.emailAddress) {
+            throw new HttpBadRequest(UserResponseMessages.EMAIL_EXISTED)
+        } else if (user.code === data.code) {
+            throw new HttpBadRequest(UserResponseMessages.USERNAME_EXISTED)
         }
     }
 
-    await user.save();
+    await data.save();
 
     res.json({
         success: true,
-        message: 'Please login via email to activate account first!'
+        message: UserResponseMessages.REQUEST_LOGIN_BY_EMAIL
     });
-}
-
-exports.getForgotPasswordAccount = async (req, res) => {
-    const { email } = req.body;
-    const account = await User.findOne({
-        emailAddress: email,
-        status: STATUS.ACTIVATED
-    }, DETAILS.ACCOUNT);
-    if (!account) {
-        throw new HttpNotFound();
-    }
-    res.json({
-        success: true,
-        account: account
-    })
 }
 
 exports.requestResetPassword = async (req, res) => {
     const user = await User.findOne({ emailAddress: req.body.emailAddress });
+
     if (!user) {
-        throw new HttpNotFound('Search returns no results. Please try again with other information.');
+        throw new HttpNotFound(UserResponseMessages.NOT_FOUND_WITH_EMAIL(req.body.emailAddress));
     }
+
     const date = user.resetToken.date;
+
     if (date) {
         const duration = moment.duration(moment(new Date()).diff(date));
         const minutes = duration.asMinutes();
-        if (minutes <= 30) {
-            throw new HttpUnauthorized('You do have to wait 30 minutes after each requesting to reset your password');
+        if (minutes <= 10) {
+            throw new HttpUnauthorized(UserResponseMessages.REQUEST_RESET_PWD_LIMIT);
         }
     }
-    const token = user.generateAuthToken('30m');
+    const token = user.generateAuthToken('10m');
+
     const url = `${req.headers['origin']}/password/reset/${token}`;
 
     const mailOptions = new MailOptions({
-        subject: '[Account LMS HCMUTE] - Reset password',
+        subject: MailTemplate.SUBJECT_RESET_PWD,
         to: user.emailAddress,
-        html: `Please follow this link to reset your password <a href="${url}">"${url}"</a>`
+        html: MailTemplate.BODY_LINK_RESET_PWD(url)
     })
-    sendMail(mailOptions, true);
-    user.resetToken = { token, date: new Date() };
-    await user.save();
-    res.json({
-        success: true,
-        message: 'Check your email to get link reset password!'
-    })
+
+    const response = sendMail(mailOptions, true);
+
+    if (response.status) {
+        user.resetToken = { token, date: new Date() };
+        await user.save();
+        res.json({
+            success: true,
+            message: UserResponseMessages.REQUEST_RESET_PWD_SUCCESS
+        })
+    }
+    else {
+        throw new HttpInternalServerError(response.message);
+    }
+
 }
 
 exports.resetPassword = async (req, res) => {
     const user = req.user;
     const token = req.header('Authorization').replace('Bearer ', '');
     if (user.resetToken?.token !== token) {
-        throw new HttpUnauthorized('Your request has been expired!');
+        throw new HttpUnauthorized(UserResponseMessages.REQUEST_RESET_PWD_EXPIRED);
     }
     user.password = req.body.password;
     user.resetToken = { ...user.resetToken, token: null };
     await user.save();
     res.json({
         success: true,
-        message: "Reset password successfully!"
+        message: UserResponseMessages.RESET_PWD_SUCCESS
     })
 
 }
@@ -116,38 +116,38 @@ exports.updatePassword = async (req, res) => {
     const user = req.user;
     const isAuth = user.comparePassword(req.body.password);
     if (!isAuth) {
-        throw new HttpBadRequest('Password is not valid');
+        throw new HttpBadRequest(UserResponseMessages.UPDATE_PWD_INVALID);
     }
     user.password = req.body.newPassword;
     await user.save();
     res.json({
         success: true,
-        message: `Update password successfully`,
+        message: UserResponseMessages.UPDATE_PWD_SUCCESS,
     });
 };
 
 exports.authenticate = async (req, res) => {
-    const user = await User.findOne({ code: req.body.code });
+    const user = await User.findOne({ code: req.body.code }, DETAILS.DETAIL);
     if (!user) {
-        throw new HttpNotFound('Authentication failed. User not found');
+        throw new HttpNotFound(UserResponseMessages.AUTHENTICATE_NOT_FOUND);
     }
 
     if (user.status === STATUS.SUSPENDED) {
-        throw new HttpUnauthorized('Your account has been suspended!')
+        throw new HttpUnauthorized(UserResponseMessages.ACCOUNT_SUSPENDED)
     } else if (user.status === STATUS.NOT_ACTIVATED) {
-        throw new HttpUnauthorized('Please login via email to activate  account first!');
+        throw new HttpUnauthorized(UserResponseMessages.ACCOUNT_NOT_ACTIVATED);
     }
 
     const validPassword = user.comparePassword(req.body.password);
     if (!validPassword) {
-        throw new HttpBadRequest('Authentication failed. Wrong password!');
+        throw new HttpBadRequest(UserResponseMessages.AUTHENTICATE_PWD_INVALID);
     }
 
     const token = user.generateAuthToken();
     res.json({
         success: true,
-        message: 'Login successfully!',
-        user: await User.findById(user._id, DETAILS.DETAIL),
+        message: UserResponseMessages.AUTHENTICATE_SUCCESS,
+        user,
         type: 'authenticate',
         token: token
     });
@@ -164,14 +164,14 @@ exports.authenticateGoogleToken = async (req, res) => {
     const userToken = req.body.token
     const payload = await verifyGoogle(userToken);
     const userEmail = payload.email;
-    const user = await User.findOne({ emailAddress: userEmail }, DETAILS.STATUS);
+    const user = await User.findOne({ emailAddress: userEmail });
 
     if (!user) {
-        throw new HttpNotFound(`Not found user ${userEmail}`);
+        throw new HttpNotFound(UserResponseMessages.AUTHENTICATE_BY_EMAIL_NOT_FOUND(userEmail));
     }
 
     if (user.status === STATUS.SUSPENDED) {
-        throw new HttpUnauthorized('Your account has been suspended!')
+        throw new HttpUnauthorized(UserResponseMessages.ACCOUNT_SUSPENDED)
     } else if (user.status === STATUS.NOT_ACTIVATED) {
         user.status = STATUS.ACTIVATED;
         await user.save();
@@ -180,7 +180,7 @@ exports.authenticateGoogleToken = async (req, res) => {
     const token = user.generateAuthToken();
     res.json({
         success: true,
-        message: 'Login successfully!',
+        message: UserResponseMessages.AUTHENTICATE_SUCCESS,
         user: await User.findById(user._id, DETAILS.DETAIL),
         type: 'google',
         token: token
@@ -191,24 +191,24 @@ exports.authenticateFacebookToken = async (req, res) => {
     const userToken = req.body.token
     const payload = await verifyFacebook(userToken);
     if (!payload) {
-        throw new HttpInternalServerError('Error while verify facebook access token')
+        throw new HttpInternalServerError(UserResponseMessages.AUTHENTICATE_BY_FACEBOOK_ERROR)
     }
     const facebookId = payload.id;
 
     const user = await User.findOne({ facebookId: facebookId }, DETAILS.STATUS);
     if (!user) {
-        throw new HttpNotFound(`Not found user with this facebook`)
+        throw new HttpNotFound(UserResponseMessages.AUTHENTICATE_BY_FACEBOOK_NOT_FOUND)
     }
     if (user.status === STATUS.SUSPENDED) {
-        throw new HttpUnauthorized('Your account has been suspended!')
+        throw new HttpUnauthorized(UserResponseMessages.ACCOUNT_SUSPENDED)
     } else if (user.status === STATUS.NOT_ACTIVATED) {
-        throw new HttpUnauthorized('Please login via email to activate  account first!');
+        throw new HttpUnauthorized(UserResponseMessages.ACCOUNT_NOT_ACTIVATED);
     }
 
     const token = user.generateAuthToken();
     res.json({
         success: true,
-        message: 'Login successfully!',
+        message: UserResponseMessages.AUTHENTICATE_SUCCESS,
         user: await User.findById(user._id, DETAILS.DETAIL),
         type: 'facebook',
         token: token
@@ -217,29 +217,31 @@ exports.authenticateFacebookToken = async (req, res) => {
 
 exports.linkFacebookAccount = async (req, res) => {
     const userToken = req.body.token
-    if (req.user.facebookId) {
-        throw new HttpUnauthorized('Your account has already linked facebook account!');
+    const user = req.user
+
+    if (user.facebookId) {
+        throw new HttpUnauthorized(UserResponseMessages.ACCOUNT_LINKED_FACEBOOK);
     }
 
     const payload = await verifyFacebook(userToken);
     if (!payload) {
-        throw new HttpInternalServerError('Error while verify facebook access token')
+        throw new HttpInternalServerError(UserResponseMessages.AUTHENTICATE_BY_FACEBOOK_ERROR)
     }
 
     const facebookId = payload.id;
     const fbUser = await User.findOne({ facebookId: facebookId });
     if (fbUser) {
-        throw new HttpUnauthorized('This facebook account is linked with another account!');
+        throw new HttpUnauthorized(UserResponseMessages.FACEBOOK_LINK_ANOTHER_ACCOUNT);
     }
-    const user = req.user
+
     user.facebookId = facebookId;
 
     await user.save();
 
     res.json({
         success: true,
-        user,
-        message: `Link to facebook ${payload.name} successfully!`
+        user: await User.findById(user._id, DETAILS.DETAIL),
+        message: UserResponseMessages.ACCOUNT_LINK_FACEBOOK_SUCCESS(payload.name)
     })
 
 
@@ -248,7 +250,7 @@ exports.linkFacebookAccount = async (req, res) => {
 exports.unlinkFacebookAccount = async (req, res) => {
     const user = req.user;
     if (!user.facebookId) {
-        throw new HttpUnauthorized(`Your account hasn't already linked facebook!`)
+        throw new HttpUnauthorized(UserResponseMessages.ACCOUNT_NOT_LINKED_FACEBOOK)
     }
     user.facebookId = undefined;
     await user.save();
@@ -256,7 +258,7 @@ exports.unlinkFacebookAccount = async (req, res) => {
     res.send({
         success: true,
         user: await User.findById(user._id, DETAILS.DETAIL),
-        message: `UnLink to facebook successfully!`
+        message: UserResponseMessages.ACCOUNT_UNLINK_FACEBOOK_SUCCESS
     });
 }
 

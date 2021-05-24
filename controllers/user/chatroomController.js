@@ -8,6 +8,8 @@ const _ = require('lodash');
 const { getDetailMessage } = require('../../services/DataMapper');
 const DETAILS = require('../../constants/AccountDetail');
 const STATUS = require('../../constants/AccountStatus');
+const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
+const { ChatResponseMessages } = ClientResponsesMessages
 
 exports.createChatroom = async (req, res) => {
     const { to } = req.body;
@@ -25,7 +27,7 @@ exports.createChatroom = async (req, res) => {
         }
     });
     if (chatroomExists) {
-        throw new HttpUnauthorized("Chatroom with that user already exists!")
+        throw new HttpUnauthorized(ChatResponseMessages.ROOM_EXISTED)
     }
     const room = new Chatroom({
         users: [{
@@ -37,7 +39,7 @@ exports.createChatroom = async (req, res) => {
     await room.save();
     const user = await User.findById(to);
     res.json({
-        message: "Chatroom created!",
+        message: ChatResponseMessages.CREATE_ROOM_SUCCESS,
         idChatroom: room._id,
         room: {
             _id: room._id,
@@ -68,7 +70,7 @@ exports.getAllChatrooms = async (req, res) => {
 exports.getChatroom = async (req, res) => {
     const chatroom = await Chatroom.findById(req.params.idChatroom);
     if (!chatroom) {
-        throw new HttpNotFound("Not found chat room!");
+        throw new HttpNotFound(ChatResponseMessages.ROOM_NOT_FOUND);
     }
     let messages = _.reverse(await Message.find({ idChatroom: chatroom._id })
         .sort({ createdAt: -1 }).limit(20));
@@ -91,7 +93,7 @@ exports.getChatroom = async (req, res) => {
 exports.getMessages = async (req, res) => {
     const chatroom = await Chatroom.findById(req.params.idChatroom);
     if (!chatroom) {
-        throw new HttpNotFound("Not found chat room!");
+        throw new HttpNotFound(ChatResponseMessages.ROOM_NOT_FOUND);
     }
     const current = req.body.current;
     let messages = _.reverse(await Message.find({ idChatroom: chatroom._id })

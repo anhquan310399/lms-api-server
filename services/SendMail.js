@@ -14,6 +14,8 @@ const transporter = nodemailer.createTransport(smtpTransport({
 }));
 
 const sendMail = (mailOptions, force = false) => {
+    let status = false;
+    let message = "";
     User.findOne({ emailAddress: mailOptions.to },
         'emailAddress isNotify')
         .then(to => {
@@ -21,7 +23,9 @@ const sendMail = (mailOptions, force = false) => {
                 transporter.sendMail(mailOptions, function (error, info) {
                     if (error) {
                         console.log(error);
+                        message = error.message;
                     } else {
+                        status = true;
                         console.log('Email sent: ' + info.response);
                     }
                 });
@@ -29,7 +33,9 @@ const sendMail = (mailOptions, force = false) => {
         })
         .catch(error => {
             console.log(error);
+            message = error.message;
         });
+    return { status, message };
 }
 
 module.exports = {

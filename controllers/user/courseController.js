@@ -1,43 +1,44 @@
 const mongoose = require("mongoose");
-const Subject = mongoose.model("Subject");
-const User = mongoose.model("User");
+const schemaTitle = require("../../constants/SchemaTitle");
+const Course = mongoose.model(schemaTitle.COURSE);
+const User = mongoose.model(schemaTitle.USER);
 const { HttpNotFound, HttpBadRequest, HttpUnauthorized } = require('../../utils/errors');
 const examStatusCodes = require('../../constants/examStatusCodes');
 const {
-    filterTimelines,
+    filterAndSortTimelines,
     getListAssignmentAndExam,
     getTimelineExport,
     getSurveyBankExport,
     getQuizBankExport,
     getDeadlineOfSubject,
-    getCommonData,
+    getCommonInfo,
 } = require('../../services/DataMapper');
 const _ = require('lodash');
-const { MailOptions } = require('../../utils/mailOptions');
+const { MailOptions, MailTemplate } = require('../../utils/mailOptions');
 const { sendMail } = require('../../services/SendMail');
 const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
-const { getCurrentCourse } = require('../../common/getCurrentCourse');
+const { getCurrentSemester } = require('../../common/getCurrentSemester');
+const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
+const { CourseResponseMessages } = ClientResponsesMessages
+
 
 exports.create = async (req, res) => {
     const data = req.body;
-    const currentCourse = getCurrentCourse();
-    const subject = new Subject({
+    const curSemester = getCurrentSemester();
+    const course = new Course({
         name: data.name,
-        idCourse: currentCourse._id,
-        config: {
-            role: data.config.role,
-            acceptEnroll: data.config.acceptEnroll
-        },
-        idLecture: req.lecture._id,
+        idSemester: curSemester._id,
+        config: data.config,
+        idTeacher: req.teacher._id,
     });
 
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
-        subject: await getCommonData(subject),
-        message: `Create new subject ${subject.name} successfully!`
+        course: getCommonInfo(course),
+        message: CourseResponseMessages.CREATE_COURSE_SUCCESS(course.name)
     });
 };
 
@@ -45,9 +46,9 @@ exports.findAll = async (req, res) => {
     const idPrivilege = req.user.idPrivilege;
     let allSubject = [];
     if (idPrivilege === PRIVILEGES.TEACHER) {
-        allSubject = await Subject.find({ idLecture: req.user._id, isDeleted: false }, "name");
+        allSubject = await Course.find({ idLecture: req.user._id, isDeleted: false }, "name");
     } else {
-        const subjects = await Subject.find({ 'studentIds': req.user._id, isDeleted: false })
+        const subjects = await Course.find({ 'studentIds': req.user._id, isDeleted: false })
         allSubject = await Promise.all(subjects.map(async (value) => {
             const teacher = await User.findOne({ _id: value.idLecture }, DETAILS.COMMON)
             return { _id: value._id, name: value.name, lecture: teacher };
@@ -63,7 +64,7 @@ exports.findAll = async (req, res) => {
 exports.find = async (req, res) => {
     const subject = req.subject;
     let timelines = req.subject.timelines;
-    timelines = await filterTimelines(timelines, req.user.idPrivilege === PRIVILEGES.TEACHER ? false : true);
+    timelines = await filterAndSortTimelines(timelines, req.user.idPrivilege === PRIVILEGES.TEACHER ? false : true);
     const result = {
         _id: subject._id,
         name: subject.name,
@@ -77,7 +78,7 @@ exports.find = async (req, res) => {
 };
 
 exports.findAllPublicSubject = async (req, res) => {
-    const subjects = await Subject.find({ 'config.role': 'public', isDeleted: false })
+    const subjects = await Course.find({ 'config.role': 'public', isDeleted: false })
     const allSubject = await Promise.all(subjects.map(async (value) => {
         var teacher = await User.findOne({ _id: value.idLecture }, DETAILS.COMMON)
         return { _id: value._id, name: value.name, lecture: teacher };
@@ -103,7 +104,7 @@ exports.getConfig = async (req, res) => {
 }
 
 exports.updateConfig = async (req, res) => {
-    const subject = await Subject.findById(req.params.idSubject);
+    const subject = await Course.findById(req.params.id);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
     }
@@ -142,7 +143,7 @@ exports.getEnrollRequests = async (req, res) => {
 }
 
 exports.enrollSubject = async (req, res) => {
-    const subject = await Subject.findById(req.params.idSubject);
+    const subject = await Course.findById(req.params.id);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
     }
@@ -196,7 +197,7 @@ exports.enrollSubject = async (req, res) => {
         success: true,
         message: isAcceptEnroll ?
             "You have been accepted to enroll this subject!" : "Your request has been send to the lecture. Wait!!!",
-        subject: getCommonData(subject),
+        subject: getCommonInfo(subject),
         isAcceptEnroll
     });
 }
@@ -420,7 +421,7 @@ exports.removeStudent = async (req, res) => {
 }
 
 exports.addListStudents = async (req, res) => {
-    const subject = await Subject.findById(req.params.idSubject);
+    const subject = await Course.findById(req.params.id);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
     }
@@ -460,7 +461,7 @@ exports.adjustOrderOfTimeline = async (req, res) => {
     });
     await subject.save();
 
-    const timelines = await filterTimelines(subject.timelines, false);
+    const timelines = await filterAndSortTimelines(subject.timelines, false);
     res.json({
         success: true,
         message: 'Adjust index of timeline successfully!',
@@ -676,7 +677,7 @@ exports.importSubject = async (req, res) => {
 
     await subject.save();
 
-    const timelines = await filterTimelines(subject.timelines);
+    const timelines = await filterAndSortTimelines(subject.timelines);
 
     const surveyBank = await Promise.all(subject.surveyBank.map(value => {
         return {
@@ -702,7 +703,7 @@ exports.importSubject = async (req, res) => {
 };
 
 exports.exportSubject = async (req, res) => {
-    const subject = await Subject.findById(req.params.idSubject)
+    const subject = await Course.findById(req.params.id)
     if (!subject) {
         throw new HttpNotFound("Not found subject");
     }
@@ -724,7 +725,7 @@ exports.exportSubject = async (req, res) => {
 }
 
 exports.exportSubjectWithCondition = async (req, res) => {
-    const subject = await Subject.findById(req.params.idSubject);
+    const subject = await Course.findById(req.params.id);
     if (!subject) {
         throw new HttpNotFound("Not found subject");
     }
@@ -760,7 +761,7 @@ exports.exportSubjectWithCondition = async (req, res) => {
 
 //Get Deadline
 exports.getDeadline = async (req, res) => {
-    const listSubject = await Subject.find({ 'studentIds': req.student._id, isDeleted: false });
+    const listSubject = await Course.find({ 'studentIds': req.student._id, isDeleted: false });
     let deadline = [];
     listSubject.forEach(subject => {
         deadline = deadline.concat(getDeadlineOfSubject(subject, req.student));

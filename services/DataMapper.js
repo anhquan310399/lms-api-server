@@ -56,7 +56,19 @@ const getConfigInfoOfUser = (user) => {
     }
 }
 
-// Not audit
+
+const filterAndSortTimelines = async (timelines, isStudent) => {
+    if (isStudent) {
+        timelines = timelines.filter((value) => {
+            return !value.isDeleted;
+        });
+    }
+
+    const res = _.sortBy(await Promise.all(timelines.map(async (timeline) => {
+        return getDetailTimeline(timeline, isStudent);
+    })), ['index']);
+    return res;
+}
 
 const getDetailTimeline = (timeline, isStudent) => {
     const forums = timeline.forums.reduce((preForums, currentForum) => {
@@ -123,18 +135,7 @@ const getDetailTimeline = (timeline, isStudent) => {
     };
 }
 
-const filterTimelines = async (timelines, isStudent) => {
-    if (isStudent) {
-        timelines = timelines.filter((value) => {
-            return !value.isDeleted;
-        });
-    }
-
-    const res = _.sortBy(await Promise.all(timelines.map(async (timeline) => {
-        return getDetailTimeline(timeline, isStudent);
-    })), ['index']);
-    return res;
-}
+// Not audit
 
 const getListAssignmentAndExam = async (subject, today) => {
     let assignmentOrExam = await (subject.timelines.reduce(
@@ -445,7 +446,7 @@ module.exports = {
     getConfigInfoOfCourse,
     getCommonInfo,
     getDetailTimeline,
-    filterTimelines,
+    filterAndSortTimelines,
     getListAssignmentAndExam,
     getTimelineExport,
     getSurveyBankExport,

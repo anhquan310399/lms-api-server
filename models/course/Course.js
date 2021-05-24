@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
 const timelineSchema = require("./Timeline");
-const quizBank = require('./QuizBank');
-const surveyBank = require('./SurveyBank');
+const questionnaire = require('./exam/QuizQuestionnaire');
 const schemaTitle = require("../../constants/SchemaTitle");
 const User = mongoose.model(schemaTitle.USER);
 const Semester = mongoose.model(schemaTitle.SEMESTER);
+const Subject = mongoose.model(schemaTitle.SUBJECT);
 var ValidatorError = mongoose.Error.ValidatorError;
 const STATUS = require('../../constants/AccountStatus');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
@@ -58,6 +58,23 @@ const Schema = mongoose.Schema({
                 });
         }
     },
+    idSubject: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: schemaTitle.SUBJECT,
+        required: [true, CourseValidate.ID_SUBJECT],
+        validate: function (id) {
+            Subject.findById(id)
+                .then(subject => {
+                    if (!subject) {
+                        throw new ValidatorError({
+                            message: CourseValidate.NOT_FOUND_SUBJECT(id),
+                            type: 'validate',
+                            path: 'idSubject'
+                        })
+                    }
+                });
+        }
+    },
     config: {
         type: config,
         required: [true, CourseValidate.CONFIG]
@@ -84,8 +101,10 @@ const Schema = mongoose.Schema({
         }
 
     },
-    quizBank: [quizBank],
-    surveyBank: [surveyBank],
+    quizBank: {
+        type: [questionnaire],
+        default: []
+    },
     timelines: [timelineSchema],
     studentIds: {
         type: [mongoose.Schema.Types.ObjectId],

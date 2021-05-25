@@ -94,15 +94,41 @@ const ClientResponsesMessages = {
     },
     ChatResponseMessages: {
         ROOM_EXISTED: 'Chatroom with that user already exists!',
-        CREATE_ROOM_SUCCESS: "Chatroom created!",
+        CREATE_ROOM_SUCCESS: 'Chatroom created!',
         ROOM_NOT_FOUND: 'Not found chat room!',
     },
     CourseResponseMessages: {
         CREATE_COURSE_SUCCESS(courseName) {
             return `Create new course ${courseName} successfully!`
         },
-        COURSE_NOT_FOUND: 'Not found subject',
-
+        COURSE_NOT_FOUND: 'Not found course',
+        UPDATE_CONFIG_SUCCESS: 'Update config of course successfully',
+        ENROLL_COURSE_PROHIBIT: 'This course can not enroll!',
+        ENROLL_COURSE_REQUESTED: 'You have already requested to enroll this course!',
+        EXISTED_IN_COURSE: 'You have already in course',
+        ENROLL_COURSE_REQUEST_STATUS(isAcceptEnroll) {
+            return isAcceptEnroll ?
+                'You have been accepted to enroll this course!' : 'Your request has been send to the lecture. Wait!!!';
+        },
+        STUDENT_ALREADY_IN_COURSE: 'This student has already in course',
+        REQUEST_NOT_FOUND: 'This student has already in course',
+        ACCEPT_ENROLL_SUCCESS: 'Accept enroll request successfully!',
+        DENY_ENROLL_SUCCESS: 'Deny enroll request successfully!',
+        EXIT_COURSE_SUCCESS: 'You has just exit this course',
+        EXIT_COURSE_REQUESTED: 'You have already request to exit this course!',
+        EXIT_COURSE_SENT: 'Your request has already sent to the teacher!',
+        ACCEPT_EXIT_SUCCESS: 'Accept exit request successfully!',
+        DENY_EXIT_SUCCESS: 'Deny exit request successfully!',
+        NOT_FOUND_STUDENT_WITH_CODE(code) {
+            return `Not found student with code: ${code}`
+        },
+        ADD_STUDENT_SUCCESS(code) {
+            return `Add Student with code '${code}' successfully!`;
+        },
+        NOT_FOUND_STUDENT_IN_COURSE: `Not found this student in course`,
+        REMOVE_STUDENT_SUCCESS: 'Remove student successfully!',
+        ADJUST_INDEX_TIMELINES_SUCCESS:'Adjust index of timeline successfully!',
+        
     }
 }
 

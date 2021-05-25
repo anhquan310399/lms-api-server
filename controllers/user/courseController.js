@@ -44,95 +44,95 @@ exports.create = async (req, res) => {
 
 exports.findAll = async (req, res) => {
     const idPrivilege = req.user.idPrivilege;
-    let allSubject = [];
+    let allCourses = [];
     if (idPrivilege === PRIVILEGES.TEACHER) {
-        allSubject = await Course.find({ idLecture: req.user._id, isDeleted: false }, "name");
+        allCourses = await Course.find({ idTeacher: req.user._id, isDeleted: false }, "name");
     } else {
-        const subjects = await Course.find({ 'studentIds': req.user._id, isDeleted: false })
-        allSubject = await Promise.all(subjects.map(async (value) => {
-            const teacher = await User.findOne({ _id: value.idLecture }, DETAILS.COMMON)
+        const courses = await Course.find({ 'studentIds': req.user._id, isDeleted: false })
+        allCourses = await Promise.all(courses.map(async (value) => {
+            const teacher = await User.findOne({ _id: value.idTeacher }, DETAILS.COMMON)
             return { _id: value._id, name: value.name, lecture: teacher };
         }));
     }
 
     res.json({
         success: true,
-        allSubject: allSubject
+        allCourses: allCourses
     });
 };
 
 exports.find = async (req, res) => {
-    const subject = req.subject;
-    let timelines = req.subject.timelines;
+    const course = req.course;
+    let timelines = req.course.timelines;
     timelines = await filterAndSortTimelines(timelines, req.user.idPrivilege === PRIVILEGES.TEACHER ? false : true);
     const result = {
-        _id: subject._id,
-        name: subject.name,
-        lecture: await User.findById(subject.idLecture, DETAILS.COMMON),
+        _id: course._id,
+        name: course.name,
+        teacher: await User.findById(course.idTeacher, DETAILS.COMMON),
         timelines: timelines || []
     };
     res.json({
         success: true,
-        subject: result
+        course: result
     });
 };
 
 exports.findAllPublicSubject = async (req, res) => {
-    const subjects = await Course.find({ 'config.role': 'public', isDeleted: false })
-    const allSubject = await Promise.all(subjects.map(async (value) => {
-        var teacher = await User.findOne({ _id: value.idLecture }, DETAILS.COMMON)
+    const course = await Course.find({ 'config.role': 'public', isDeleted: false })
+    const allCourses = await Promise.all(course.map(async (value) => {
+        var teacher = await User.findOne({ _id: value.idTeacher }, DETAILS.COMMON)
         return { _id: value._id, name: value.name, lecture: teacher };
     }));
 
     res.json({
         success: true,
-        allSubject: allSubject
+        allCourses: allCourses
     });
 }
 
 //Config of subjects
 exports.getConfig = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
     res.json({
         success: true,
-        subject: {
-            _id: subject._id,
-            name: subject.name,
-            config: subject.config
+        course: {
+            _id: course._id,
+            name: course.name,
+            config: course.config
         }
     });
 }
 
 exports.updateConfig = async (req, res) => {
-    const subject = await Course.findById(req.params.id);
-    if (!subject) {
-        throw new HttpNotFound("Not found subject");
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+        throw new HttpNotFound(CourseResponseMessages.COURSE_NOT_FOUND);
     }
     const data = req.body;
 
     if (data.config) {
-        subject.config.acceptEnroll = data.config.acceptEnroll || false;
+        course.config.acceptEnroll = data.config.acceptEnroll || false;
     }
 
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
-        message: "Update config of Subject Successfully",
-        subject: {
-            _id: subject._id,
-            name: subject.name,
-            config: subject.config
+        message: CourseResponseMessages.UPDATE_CONFIG_SUCCESS,
+        course: {
+            _id: course._id,
+            name: course.name,
+            config: course.config
         }
     });
 };
 
 //Enroll Requests
 exports.getEnrollRequests = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
     const requests = await Promise.all(
-        subject.enrollRequests.map(async (id) =>
+        course.enrollRequests.map(async (id) =>
             await User.findById(id, DETAILS.COMMON)
         ));
 
@@ -143,131 +143,112 @@ exports.getEnrollRequests = async (req, res) => {
 }
 
 exports.enrollSubject = async (req, res) => {
-    const subject = await Course.findById(req.params.id);
-    if (!subject) {
-        throw new HttpNotFound("Not found subject");
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+        throw new HttpNotFound(CourseResponseMessages.COURSE_NOT_FOUND);
     }
     const student = req.student;
 
-    if (subject.config.role === 'private') {
-        throw new HttpUnauthorized('This subject can not enroll!');
+    if (course.config.role === 'private') {
+        throw new HttpUnauthorized(CourseResponseMessages.ENROLL_COURSE_PROHIBIT);
     }
 
-    const isEnrolled = subject.enrollRequests.find(value => value.equals(student._id));
+    const isEnrolled = course.enrollRequests.find(value => value.equals(student._id));
     if (isEnrolled) {
-        throw new HttpUnauthorized('You have already requested to enroll this subject!');
+        throw new HttpUnauthorized(CourseResponseMessages.ENROLL_COURSE_REQUESTED);
     }
 
-    const isExists = subject.studentIds.find(value => value.equals(student._id));
+    const isExists = course.studentIds.find(value => value.equals(student._id));
     if (isExists) {
-        throw new HttpUnauthorized('You have already in subject');
+        throw new HttpUnauthorized(CourseResponseMessages.EXISTED_IN_COURSE);
     }
 
-    const isAcceptEnroll = subject.config.acceptEnroll;
+    const isAcceptEnroll = course.config.acceptEnroll;
     if (isAcceptEnroll) {
-        subject.studentIds.push(student._id);
+        course.studentIds.push(student._id);
     } else {
-        subject.enrollRequests.push(student._id);
+        course.enrollRequests.push(student._id);
     }
-    await subject.save();
+    await course.save();
 
     //Send email to teacher
-    const teacher = await User.findById(subject.idLecture, 'emailAddress');
+    const teacher = await User.findById(course.idTeacher, 'emailAddress');
     let mailOptions;
     if (isAcceptEnroll) {
-        mailOptions = new MailOptions({
-            to: teacher.emailAddress,
-            subject: `[${subject.name}] - New Student Enroll`,
-            text: `Student: ${student.firstName
-                + " " + student.lastName}, 
-                MSSV: ${student.code} has just enrolled your subject [${subject.name}]`
-        });
+        mailOptions = MailTemplate.MAIL_NOTIFY_STUDENT_ENROLL(student, teacher, course);
     } else {
-        mailOptions = new MailOptions({
-            to: teacher.emailAddress,
-            subject: `[${subject.name}] - New Enroll Request`,
-            text: `Student: ${student.firstName
-                + " " + student.lastName}, 
-                MSSV: ${student.code} has just requested enroll your subject [${subject.name}]`
-        });
+        mailOptions = MailTemplate.MAIL_NOTIFY_STUDENT_REQUEST_ENROLL(student, teacher, course);
     }
     //sendMail(mailOptions);
 
     res.json({
         success: true,
-        message: isAcceptEnroll ?
-            "You have been accepted to enroll this subject!" : "Your request has been send to the lecture. Wait!!!",
-        subject: getCommonInfo(subject),
+        message: CourseResponseMessages.ENROLL_COURSE_REQUEST_STATUS(isAcceptEnroll),
+        course: getCommonInfo(course),
         isAcceptEnroll
     });
 }
 
 exports.acceptEnrollRequest = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const isEnrolled = subject.enrollRequests.find(value => value.equals(req.body.idStudent));
+    const isEnrolled = course.enrollRequests.find(value => value.equals(req.body.idStudent));
     if (!isEnrolled) {
-        throw new HttpNotFound('Can not found this request!');
+        throw new HttpNotFound(CourseResponseMessages.REQUEST_NOT_FOUND);
     }
 
-    const isExists = subject.studentIds.find(value => value.equals(req.body.idStudent));
+    const isExists = course.studentIds.find(value => value.equals(req.body.idStudent));
     if (isExists) {
-        throw new HttpBadRequest('This student has already in subject');
+        throw new HttpBadRequest(CourseResponseMessages.STUDENT_ALREADY_IN_COURSE);
     }
 
-    const index = subject.enrollRequests.indexOf(isEnrolled);
-    subject.enrollRequests.splice(index, 1)
-    subject.studentIds.push(req.body.idStudent);
-    await subject.save();
+    const index = course.enrollRequests.indexOf(isEnrolled);
+    course.enrollRequests.splice(index, 1)
+    course.studentIds.push(req.body.idStudent);
+    await course.save();
 
     //Send email to student
     const student = await User.findById(req.body.idStudent, DETAILS.COMMON)
-    const mailOptions = new MailOptions({
-        to: student.emailAddress,
-        subject: `[${subject.name}] - Accept Enroll Request`,
-        text: `Your request to enroll subject [${subject.name}] has just accepted!`
-    });
+    const mailOptions = MailTemplate.MAIL_NOTIFY_ENROLL_REQUEST_PROCESS(student, course, true);
     sendMail(mailOptions);
 
     res.json({
         success: true,
-        message: "Accept enroll request successfully!",
+        message: CourseResponseMessages.ACCEPT_ENROLL_SUCCESS,
         student: student
     });
 }
 
 exports.denyEnrollRequest = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const isEnrolled = subject.enrollRequests.find(value => value.equals(req.body.idStudent));
+    const isEnrolled = course.enrollRequests.find(value => value.equals(req.body.idStudent));
     if (!isEnrolled) {
-        throw new HttpNotFound('Can not found this request!');
+        throw new HttpNotFound(CourseResponseMessages.REQUEST_NOT_FOUND);
     }
-    const index = subject.enrollRequests.indexOf(isEnrolled);
-    subject.enrollRequests.splice(index, 1)
-    await subject.save();
+    const index = course.enrollRequests.indexOf(isEnrolled);
+    course.enrollRequests.splice(index, 1)
+    await course.save();
 
     //Send email to student
     const student = await User.findById(req.body.idStudent, 'emailAddress')
-    const mailOptions = new MailOptions({
-        to: student.emailAddress,
-        subject: `[${subject.name}] - Deny Enroll Request`,
-        text: `Your request to enroll subject [${subject.name}] has just denied!`
-    });
+
+    const mailOptions = MailTemplate.MAIL_NOTIFY_ENROLL_REQUEST_PROCESS(student, course, false);
+
     sendMail(mailOptions);
 
     res.json({
         success: true,
-        message: "Deny enroll request successfully!",
+        message: CourseResponseMessages.DENY_ENROLL_SUCCESS,
     });
 }
 
 //Exit subject
 exports.getExitRequests = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
     const requests = await Promise.all(
-        subject.exitRequests.map(async (value) =>
+        course.exitRequests.map(async (value) =>
             await User.findById(value, DETAILS.COMMON)
         ));
     res.json({
@@ -277,31 +258,30 @@ exports.getExitRequests = async (req, res) => {
 }
 
 exports.exitSubject = async (req, res) => {
-    const subject = req.subject;
-    let message = ""
-    if (subject.config.role === 'public') {
-        const index = subject.studentIds.indexOf(req.student._id);
-        subject.studentIds.splice(index, 1);
-        message = `You has just exit subject [${subject.name}]`
+    const course = req.course;
+    let message;
+    if (course.config.role === 'public') {
+        const index = course.studentIds.indexOf(req.student._id);
+        course.studentIds.splice(index, 1);
+        message = CourseResponseMessages.EXIT_COURSE_SUCCESS
     } else {
-        const isReq = subject.exitRequests.find(value => value.equals(req.student._id));
+        const isReq = course.exitRequests.find(value => value.equals(req.student._id));
         if (isReq) {
-            throw new HttpUnauthorized("You have already request to exit this subject!");
+            throw new HttpUnauthorized(CourseResponseMessages.EXIT_COURSE_REQUESTED);
         }
-        subject.exitRequests.push(req.student._id);
-        const teacher = await User.findById(subject.idLecture, 'emailAddress');
-        const student = await User.findById(req.student._id, DETAILS.COMMON);
-        const mailOptions = new MailOptions({
-            to: teacher.emailAddress,
-            subject: `[${subject.name}] - Request Exit Subject`,
-            text: `Student: ${student.firstName
-                + " " + student.lastName}, 
-                MSSV: ${student.code} has just request to exit your subject [${subject.name}]`
-        });
+        course.exitRequests.push(req.student._id);
+
+        const teacher = await User.findById(course.idTeacher, DETAILS.COMMON);
+
+        const student = req.student;
+
+        const mailOptions = MailTemplate.MAIL_NOTIFY_EXIT_COURSE_REQUEST(student, teacher, course);
+
         //sendMail(mailOptions);
-        message = `Your request has already send to the Lecture!`
+
+        message = CourseResponseMessages.EXIT_COURSE_SENT
     }
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
@@ -310,65 +290,59 @@ exports.exitSubject = async (req, res) => {
 }
 
 exports.acceptExitRequest = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const isRed = subject.exitRequests.find(value => value.equals(req.body.idStudent));
+    const isRed = course.exitRequests.find(value => value.equals(req.body.idStudent));
     if (!isRed) {
-        throw new HttpNotFound('Can not found this request!');
+        throw new HttpNotFound(CourseResponseMessages.REQUEST_NOT_FOUND);
     }
-    const index = subject.studentIds.indexOf(req.body.idStudent);
-    subject.exitRequests.splice(subject.exitRequests.indexOf(isRed), 1)
-    subject.studentIds.splice(index, 1);
+    const index = course.studentIds.indexOf(req.body.idStudent);
+    course.exitRequests.splice(course.exitRequests.indexOf(isRed), 1)
+    course.studentIds.splice(index, 1);
 
-    await subject.save();
+    await course.save();
 
     //Send email to student
-    const student = await User.findById(req.body.idStudent, 'emailAddress')
-    const mailOptions = new MailOptions({
-        to: student.emailAddress,
-        subject: `[${subject.name}] - Accept Exit Request`,
-        text: `Your request to exit subject [${subject.name}] has just accepted!`
-    });
+    const student = await User.findById(req.body.idStudent, DETAILS.COMMON)
+    const mailOptions = MailTemplate.MAIL_NOTIFY_EXIT_COURSE_PROCESS(student, course, true);
     sendMail(mailOptions);
 
     res.json({
         success: true,
-        message: "Accept exit request successfully!",
+        message: CourseResponseMessages.ACCEPT_EXIT_SUCCESS,
     });
 }
 
 exports.denyExitRequest = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const isReq = subject.exitRequests.find(value => value.equals(req.body.idStudent));
+    const isReq = course.exitRequests.find(value => value.equals(req.body.idStudent));
     if (!isReq) {
-        throw new HttpNotFound('Can not found this request!');
+        throw new HttpNotFound(CourseResponseMessages.REQUEST_NOT_FOUND);
     }
-    const index = subject.exitRequests.indexOf(isReq);
-    subject.exitRequests.splice(index, 1)
-    await subject.save();
+    const index = course.exitRequests.indexOf(isReq);
+    course.exitRequests.splice(index, 1)
+    await course.save();
 
     //Send email to student
-    const student = await User.findById(req.body.idStudent, 'emailAddress')
-    const mailOptions = new MailOptions({
-        to: student.emailAddress,
-        subject: `[${subject.name}] - Deny Exit Request`,
-        text: `Your request to exit subject [${subject.name}] has just denied!`
-    });
+    const student = await User.findById(req.body.idStudent, DETAILS.COMMON)
+
+    const mailOptions = MailTemplate.MAIL_NOTIFY_EXIT_COURSE_PROCESS(student, course, false);
+
     sendMail(mailOptions);
 
     res.json({
         success: true,
-        message: "Deny exit request successfully!",
+        message: CourseResponseMessages.DENY_EXIT_SUCCESS,
     });
 }
 
 //List students in subject
 exports.getListStudent = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
     const students = _.sortBy(await Promise.all(
-        subject.studentIds.map(async (idStudent) =>
+        course.studentIds.map(async (idStudent) =>
             await User.findById(idStudent, DETAILS.COMMON)
         )), ['code']);
     res.json({
@@ -378,27 +352,27 @@ exports.getListStudent = async (req, res) => {
 }
 
 exports.addStudent = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
     const student = await User.findOne({
         code: req.body.idStudent,
         idPrivilege: PRIVILEGES.STUDENT || PRIVILEGES.REGISTER
     }, DETAILS.COMMON);
     if (!student) {
-        throw new HttpNotFound(`Not found student with id: ${req.body.idStudent}`);
+        throw new HttpNotFound(CourseResponseMessages.NOT_FOUND_STUDENT_WITH_CODE(req.body.idStudent));
     }
 
-    const isExists = subject.studentIds.find(value => value.equals(student._id));
+    const isExists = course.studentIds.find(value => value.equals(student._id));
     if (isExists) {
-        throw new HttpBadRequest('This student has already in subject');
+        throw new HttpBadRequest(CourseResponseMessages.STUDENT_ALREADY_IN_COURSE);
     }
 
-    subject.studentIds.push(student._id);
-    await subject.save()
+    course.studentIds.push(student._id);
+    await course.save()
 
     res.json({
         success: true,
-        message: `Add Student with code ${req.body.idStudent} Successfully!`,
+        message: CourseResponseMessages.ADD_STUDENT_SUCCESS(req.body.idStudent),
         student: student
     });
 };
@@ -409,36 +383,20 @@ exports.removeStudent = async (req, res) => {
     const index = subject.studentIds.indexOf(req.body.idStudent);
 
     if (index === -1) {
-        throw new HttpNotFound(`Not found this student in subject`);
+        throw new HttpNotFound(CourseResponseMessages.NOT_FOUND_STUDENT_IN_COURSE);
     }
     subject.studentIds.splice(index, 1);
     await subject.save();
 
     res.json({
         success: true,
-        message: `Remove Student Successfully!`,
+        message: CourseResponseMessages.REMOVE_STUDENT_SUCCESS,
     });
 }
 
-exports.addListStudents = async (req, res) => {
-    const subject = await Course.findById(req.params.id);
-    if (!subject) {
-        throw new HttpNotFound("Not found subject");
-    }
-    var list = subject.studentIds.concat(req.body.studentIds).sort();
-    list = list.filter((a, b) => list.indexOf(a) === b);
-    subject.studentIds = list;
-    await subject.save();
-    res.json({
-        success: true,
-        message: "Add Student Successfully!"
-    });
-
-};
-
-// Order timelines of subject
+// Order timelines of course
 exports.getOrderOfTimeLine = async (req, res) => {
-    const data = req.subject;
+    const data = req.course;
     let result = {
         _id: data._id,
         name: data.name,
@@ -454,26 +412,26 @@ exports.getOrderOfTimeLine = async (req, res) => {
 
 exports.adjustOrderOfTimeline = async (req, res) => {
     const adjust = req.body;
-    const subject = req.subject;
+    const course = req.course;
     await adjust.forEach(element => {
-        var timeline = subject.timelines.find(x => x._id.equals(element._id));
+        var timeline = course.timelines.find(x => x._id.equals(element._id));
         timeline.index = element.index;
     });
-    await subject.save();
+    await course.save();
 
-    const timelines = await filterAndSortTimelines(subject.timelines, false);
+    const timelines = await filterAndSortTimelines(course.timelines, false);
     res.json({
         success: true,
-        message: 'Adjust index of timeline successfully!',
+        message: CourseResponseMessages.ADJUST_INDEX_TIMELINES_SUCCESS,
         timelines: timelines
     })
 }
 
-// Score in subject
+// Score in course
 exports.getSubjectTranscript = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
     const today = new Date();
-    const fields = await getListAssignmentAndExam(subject, today);
+    const fields = await getListAssignmentAndExam(course, today);
     if (req.user.idPrivilege === PRIVILEGES.STUDENT ||
         req.user.idPrivilege === PRIVILEGES.REGISTER) {
 
@@ -519,7 +477,7 @@ exports.getSubjectTranscript = async (req, res) => {
     } else {
         let transcript = await Promise.all(fields.map(async (field) => {
             let submissions = await Promise.all(
-                subject.studentIds.map(async (idStudent) => {
+                course.studentIds.map(async (idStudent) => {
                     const student = await User.findById(idStudent, DETAILS.COMMON);
 
                     let submission = field.submissions.find(value => value.idStudent.equals(student._id));
@@ -784,9 +742,9 @@ exports.getDeadlineBySubject = async (req, res) => {
 
 //Check zoom
 exports.getZoom = (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
     res.json({
         success: true,
-        idRoom: subject._id
+        idRoom: course._id
     });
 }

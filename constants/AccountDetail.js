@@ -6,5 +6,6 @@ module.exports = {
     AUTH: "idPrivilege emailAddress",
     LOGIN: "emailAddress firstName lastName urlAvatar isNotify facebookId",
     STATISTIC: "emailAddress firstName lastName urlAvatar status createdAt",
-    ACCOUNT: "emailAddress firstName lastName urlAvatar"
+    ACCOUNT: "emailAddress firstName lastName urlAvatar",
+    DEFAULT:"code emailAddress firstName lastName urlAvatar idPrivilege"
 }

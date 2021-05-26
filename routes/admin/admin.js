@@ -1,13 +1,13 @@
 const router = require("express").Router();
-const { catchErrors } = require("../handlers/errorHandlers");
-const semesterCTL = require("../controllers/admin/semesterController");
-const courseCTL = require("../controllers/admin/courseController");
-const privilegeCTL = require("../controllers/admin/privilegeController");
-const userCTL = require("../controllers/admin/userController");
-const facultyCTL = require("../controllers/admin/facultyController");
-const adminCTL = require("../controllers/admin/adminController");
+const { catchErrors } = require("../../handlers/errorHandlers");
+const semesterCTL = require("../../controllers/admin/semesterController");
+const courseCTL = require("../../controllers/admin/courseController");
+const privilegeCTL = require("../../controllers/admin/privilegeController");
+const userCTL = require("../../controllers/admin/userController");
+const facultyCTL = require("../../controllers/admin/facultyController");
+const adminCTL = require("../../controllers/admin/adminController");
 
-const { authAdmin } = require("../middlewares/auth")
+const { authAdmin } = require("../../middlewares/auth")
 
 router.get("/statistic", authAdmin, catchErrors(adminCTL.getStatistic));
 

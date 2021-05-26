@@ -1,32 +1,35 @@
 const _ = require('lodash');
 const { HttpNotFound } = require('../../utils/errors');
-const { getDetailTimeline } = require('../../services/DataMapper');
-const { findTimeline } = require('../../services/DataSearcherThroughReq');
+const { getDetailTimeline } = require('../../services/DataHelpers');
+const { findTimeline, findFile } = require('../../services/FindHelpers');
+const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
+const { TimelineResponseMessages } = ClientResponsesMessages
+const PRIVILEGES = require('../../constants/PrivilegeCode');
 
-exports.create = async(req, res) => {
-    const subject = req.subject;
+exports.create = async (req, res) => {
+    const course = req.course;
 
     const model = {
         name: req.body.data.name,
         description: req.body.data.description,
-        index: subject.timelines.length + 1
+        index: course.timelines.length + 1
     };
 
-    const length = subject.timelines.push(model);
+    const length = course.timelines.push(model);
 
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
-        message: "Create timeline successfully!",
-        timeline: getDetailTimeline(subject.timelines[length - 1])
+        message: TimelineResponseMessages.CREATE_SUCCESS,
+        timeline: getDetailTimeline(course.timelines[length - 1])
     });
 };
 
-exports.findAll = async(req, res) => {
-    const subject = req.subject;
+exports.findAll = async (req, res) => {
+    const course = req.course;
 
-    const timelines = _.sortBy(await Promise.all(subject.timelines.map(async(value) => {
+    const timelines = _.sortBy(await Promise.all(course.timelines.map(async (value) => {
         return {
             _id: value._id,
             name: value.name,
@@ -41,55 +44,59 @@ exports.findAll = async(req, res) => {
     });
 };
 
-exports.find = async(req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
+exports.find = async (req, res) => {
+    const course = req.course;
+
+    const timeline = findTimeline(course, req.params.idTimeline, false);
+
     const data = getDetailTimeline(timeline);
+
     res.json({
         success: true,
         timeline: data
     });
 };
 
-exports.update = async(req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
+exports.update = async (req, res) => {
+    const course = req.course;
+
+    const timeline = findTimeline(course, req.params.idTimeline, false);
 
     timeline.name = req.body.data.name;
     timeline.description = req.body.data.description;
 
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
-        message: 'Update timeline successfully!',
+        message: TimelineResponseMessages.UPDATE_SUCCESS,
         timeline: getDetailTimeline(timeline)
     });
 
 };
 
-exports.hideOrUnHide = async(req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
+exports.lock = async (req, res) => {
+    const course = req.course;
+
+    const timeline = findTimeline(course, req.params.idTimeline, false);
+
     timeline.isDeleted = !timeline.isDeleted;
-    await subject.save();
-    let message = "";
-    if (timeline.isDeleted) {
-        message = `Hide timeline ${timeline.name} successfully!`;
-    } else {
-        message = `Unhide timeline ${timeline.name} successfully!`;
-    }
+
+    await course.save();
+
     res.json({
         success: true,
-        message,
+        message: TimelineResponseMessages.LOCK_MESSAGE(timeline),
         timeline: getDetailTimeline(timeline)
     });
 
 };
 
-exports.uploadFile = async(req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
+exports.uploadFile = async (req, res) => {
+    const course = req.course;
+
+    const timeline = findTimeline(course, req.params.idTimeline, false);
+
     const file = {
         name: req.body.data.name,
         path: req.body.data.path,
@@ -99,42 +106,39 @@ exports.uploadFile = async(req, res) => {
     }
     const index = timeline.files.push(file);
 
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
-        message: 'Upload file successfully!',
+        message: TimelineResponseMessages.UPLOAD_FILE_SUCCESS,
         file: timeline.files[index - 1]
     });
 }
 
-exports.getFile = async(req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
-    const file = timeline.files.find(value => value._id.equals(req.params.idFile));
-    if (!file) {
-        throw new HttpNotFound("Not found file");
-    }
+exports.getFile = async (req, res) => {
+    const course = req.course;
+
+    const { file } = findFile(course, req.params.idTimeline, req.params.idFile, !(req.user.idPrivilege === PRIVILEGES.TEACHER))
+
     res.json({
         success: true,
         file: file
     });
 }
 
-exports.updateFile = async(req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
-    const file = timeline.files.find(value => value._id.equals(req.params.idFile));
-    if (!file) {
-        throw new HttpNotFound("Not found file");
-    }
+exports.updateFile = async (req, res) => {
+    const course = req.course;
+
+    const { file } = findFile(course, req.params.idTimeline, req.params.idFile, false);
+
+
     file.name = req.body.data.name;
     file.path = req.body.data.path;
     file.type = req.body.data.type;
     if (file.path !== req.body.data.path) { file.uploadDay = new Date(); }
     file.isDeleted = req.body.data.isDeleted || false;
 
-    await subject.save();
+    await course.save();
     res.json({
         success: true,
         file: file
@@ -142,19 +146,18 @@ exports.updateFile = async(req, res) => {
 
 }
 
-exports.removeFile = async(req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
-    const file = timeline.files.find(value => value._id.equals(req.params.idFile));
-    if (!file) {
-        throw new HttpNotFound("Not found file");
-    }
+exports.removeFile = async (req, res) => {
+    const course = req.course;
+
+    const { timeline, file } = findFile(course, req.params.idTimeline, req.params.idFile, false);
+
+
     let index = timeline.files.indexOf(file);
     timeline.files.splice(index, 1);
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
-        message: "Delete file successfully!"
+        message: TimelineResponseMessages.DELETE_FILE_SUCCESS
     });
 }

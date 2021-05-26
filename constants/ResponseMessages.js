@@ -127,12 +127,27 @@ const ClientResponsesMessages = {
         },
         NOT_FOUND_STUDENT_IN_COURSE: `Not found this student in course`,
         REMOVE_STUDENT_SUCCESS: 'Remove student successfully!',
-        ADJUST_INDEX_TIMELINES_SUCCESS:'Adjust index of timeline successfully!',
-        
+        ADJUST_INDEX_TIMELINES_SUCCESS: 'Adjust index of timeline successfully!',
+        COURSE_HAS_TIMELINES: 'Course already has data. Cant not import new data',
+        IMPORT_DATA_SUCCESS: 'Import data to course successfully!',
+    },
+    TimelineResponseMessages: {
+        CREATE_SUCCESS: 'Create timeline successfully!',
+        UPDATE_SUCCESS: 'Update timeline successfully!',
+        LOCK_MESSAGE({ isDeleted: status, name }) {
+            return `${status ? 'Hide' : 'Show'} timeline ${name} successfully!`
+        },
+        UPLOAD_FILE_SUCCESS: 'Upload file successfully!',
+        DELETE_FILE_SUCCESS: 'Delete file successfully!'
     }
+}
+
+const AuthResponseMessages = {
+    NOT_FOUND_COURSE: 'Not found course"'
 }
 
 module.exports = {
     AdminResponseMessages,
-    ClientResponsesMessages
+    ClientResponsesMessages,
+    AuthResponseMessages
 }

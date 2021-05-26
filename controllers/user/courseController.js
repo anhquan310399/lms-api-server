@@ -8,13 +8,13 @@ const {
     filterAndSortTimelines,
     getListAssignmentAndExam,
     getTimelineExport,
-    getSurveyBankExport,
     getQuizBankExport,
-    getDeadlineOfSubject,
+    getDeadlineOfCourse,
     getCommonInfo,
-} = require('../../services/DataMapper');
+    getUserById,
+} = require('../../services/DataHelpers');
 const _ = require('lodash');
-const { MailOptions, MailTemplate } = require('../../utils/mailOptions');
+const { MailTemplate } = require('../../utils/mailOptions');
 const { sendMail } = require('../../services/SendMail');
 const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
@@ -50,8 +50,8 @@ exports.findAll = async (req, res) => {
     } else {
         const courses = await Course.find({ 'studentIds': req.user._id, isDeleted: false })
         allCourses = await Promise.all(courses.map(async (value) => {
-            const teacher = await User.findOne({ _id: value.idTeacher }, DETAILS.COMMON)
-            return { _id: value._id, name: value.name, lecture: teacher };
+            const teacher = await getUserById(value.idTeacher, DETAILS.COMMON);
+            return { _id: value._id, name: value.name, teacher: teacher };
         }));
     }
 
@@ -68,7 +68,7 @@ exports.find = async (req, res) => {
     const result = {
         _id: course._id,
         name: course.name,
-        teacher: await User.findById(course.idTeacher, DETAILS.COMMON),
+        teacher: await getUserById(course.idTeacher, DETAILS.COMMON),
         timelines: timelines || []
     };
     res.json({
@@ -80,8 +80,8 @@ exports.find = async (req, res) => {
 exports.findAllPublicSubject = async (req, res) => {
     const course = await Course.find({ 'config.role': 'public', isDeleted: false })
     const allCourses = await Promise.all(course.map(async (value) => {
-        var teacher = await User.findOne({ _id: value.idTeacher }, DETAILS.COMMON)
-        return { _id: value._id, name: value.name, lecture: teacher };
+        const teacher = await getUserById({ _id: value.idTeacher }, DETAILS.COMMON)
+        return { _id: value._id, name: value.name, teacher: teacher };
     }));
 
     res.json({
@@ -133,7 +133,7 @@ exports.getEnrollRequests = async (req, res) => {
 
     const requests = await Promise.all(
         course.enrollRequests.map(async (id) =>
-            await User.findById(id, DETAILS.COMMON)
+            await getUserById(id, DETAILS.COMMON)
         ));
 
     res.json({
@@ -172,8 +172,10 @@ exports.enrollSubject = async (req, res) => {
     await course.save();
 
     //Send email to teacher
-    const teacher = await User.findById(course.idTeacher, 'emailAddress');
+    const teacher = await getUserById(course.idTeacher, 'emailAddress');
+
     let mailOptions;
+
     if (isAcceptEnroll) {
         mailOptions = MailTemplate.MAIL_NOTIFY_STUDENT_ENROLL(student, teacher, course);
     } else {
@@ -208,7 +210,7 @@ exports.acceptEnrollRequest = async (req, res) => {
     await course.save();
 
     //Send email to student
-    const student = await User.findById(req.body.idStudent, DETAILS.COMMON)
+    const student = await getUserById(req.body.idStudent, DETAILS.COMMON)
     const mailOptions = MailTemplate.MAIL_NOTIFY_ENROLL_REQUEST_PROCESS(student, course, true);
     sendMail(mailOptions);
 
@@ -231,7 +233,7 @@ exports.denyEnrollRequest = async (req, res) => {
     await course.save();
 
     //Send email to student
-    const student = await User.findById(req.body.idStudent, 'emailAddress')
+    const student = await getUserById(req.body.idStudent, DETAILS.COMMON)
 
     const mailOptions = MailTemplate.MAIL_NOTIFY_ENROLL_REQUEST_PROCESS(student, course, false);
 
@@ -248,8 +250,8 @@ exports.getExitRequests = async (req, res) => {
     const course = req.course;
 
     const requests = await Promise.all(
-        course.exitRequests.map(async (value) =>
-            await User.findById(value, DETAILS.COMMON)
+        course.exitRequests.map(async (id) =>
+            await getUserById(id, DETAILS.COMMON)
         ));
     res.json({
         success: true,
@@ -271,7 +273,7 @@ exports.exitSubject = async (req, res) => {
         }
         course.exitRequests.push(req.student._id);
 
-        const teacher = await User.findById(course.idTeacher, DETAILS.COMMON);
+        const teacher = await getUserById(course.idTeacher, DETAILS.COMMON);
 
         const student = req.student;
 
@@ -303,7 +305,7 @@ exports.acceptExitRequest = async (req, res) => {
     await course.save();
 
     //Send email to student
-    const student = await User.findById(req.body.idStudent, DETAILS.COMMON)
+    const student = await getUserById(req.body.idStudent, DETAILS.COMMON)
     const mailOptions = MailTemplate.MAIL_NOTIFY_EXIT_COURSE_PROCESS(student, course, true);
     sendMail(mailOptions);
 
@@ -325,7 +327,7 @@ exports.denyExitRequest = async (req, res) => {
     await course.save();
 
     //Send email to student
-    const student = await User.findById(req.body.idStudent, DETAILS.COMMON)
+    const student = await getUserById(req.body.idStudent, DETAILS.COMMON)
 
     const mailOptions = MailTemplate.MAIL_NOTIFY_EXIT_COURSE_PROCESS(student, course, false);
 
@@ -343,7 +345,7 @@ exports.getListStudent = async (req, res) => {
 
     const students = _.sortBy(await Promise.all(
         course.studentIds.map(async (idStudent) =>
-            await User.findById(idStudent, DETAILS.COMMON)
+            await getUserById(idStudent, DETAILS.COMMON)
         )), ['code']);
     res.json({
         success: true,
@@ -414,7 +416,7 @@ exports.adjustOrderOfTimeline = async (req, res) => {
     const adjust = req.body;
     const course = req.course;
     await adjust.forEach(element => {
-        var timeline = course.timelines.find(x => x._id.equals(element._id));
+        const timeline = course.timelines.find(x => x._id.equals(element._id));
         timeline.index = element.index;
     });
     await course.save();
@@ -478,7 +480,7 @@ exports.getSubjectTranscript = async (req, res) => {
         let transcript = await Promise.all(fields.map(async (field) => {
             let submissions = await Promise.all(
                 course.studentIds.map(async (idStudent) => {
-                    const student = await User.findById(idStudent, DETAILS.COMMON);
+                    const student = await getUserById(idStudent, DETAILS.COMMON);
 
                     let submission = field.submissions.find(value => value.idStudent.equals(student._id));
                     let isRemain = field.isRemain;
@@ -555,7 +557,7 @@ exports.getSubjectTranscriptTotal = async (req, res) => {
 
     let data = await Promise.all(subject.studentIds.map(
         async (idStudent) => {
-            const student = await User.findById(idStudent, DETAILS.COMMON)
+            const student = await getUserById(idStudent, DETAILS.COMMON)
                 .then(value => { return value });
             let data = {
                 'c0': student.code,
@@ -611,40 +613,17 @@ exports.updateRatioTranscript = async (req, res) => {
     return this.getSubjectTranscriptTotal(req, res);
 }
 
-//Import, Export Subject
-exports.importSubject = async (req, res) => {
-    const subject = req.subject;
+//Import, Export course
+exports.importQuizBank = async (req, res) => {
+    const course = req.course;
 
-    if (req.body.timelines) {
-        if (subject.timelines.length === 0) {
-            subject.timelines = req.body.timelines;
-        } else {
-            throw new HttpBadRequest('Đã có dữ liệu các tuần không thể import!');
-        }
-    }
-    if (req.body.studentIds) {
-        subject.studentIds = subject.studentIds.concat(req.body.studentIds);
-        subject.studentIds = subject.studentIds.filter((a, b) => subject.studentIds.indexOf(a) === b)
-    }
-    if (req.body.surveyBank) {
-        subject.surveyBank = subject.surveyBank.concat(req.body.surveyBank);
-    }
     if (req.body.quizBank) {
-        subject.quizBank = subject.quizBank.concat(req.body.quizBank);
+        course.quizBank = course.quizBank.concat(req.body.quizBank);
     }
 
-    await subject.save();
+    await course.save();
 
-    const timelines = await filterAndSortTimelines(subject.timelines);
-
-    const surveyBank = await Promise.all(subject.surveyBank.map(value => {
-        return {
-            _id: value._id,
-            name: value.name,
-            questions: value.questions.length
-        }
-    }));
-    const quizBank = await Promise.all(subject.quizBank.map(value => {
+    const quizBank = await Promise.all(course.quizBank.map(value => {
         return {
             _id: value._id,
             name: value.name,
@@ -653,76 +632,66 @@ exports.importSubject = async (req, res) => {
     }));
     res.json({
         success: true,
-        message: `Import data to subject ${subject.name} successfully!`,
-        timelines: timelines,
-        surveyBank: surveyBank,
+        message: CourseResponseMessages.IMPORT_DATA_SUCCESS,
         quizBank: quizBank
     });
 };
 
-exports.exportSubject = async (req, res) => {
-    const subject = await Course.findById(req.params.id)
-    if (!subject) {
-        throw new HttpNotFound("Not found subject");
+exports.exportQuizBank = async (req, res) => {
+    const course = await Course.findById(req.params.id)
+    if (!course) {
+        throw new HttpNotFound(CourseResponseMessages.COURSE_NOT_FOUND);
     }
-    const timelines = await getTimelineExport(subject.timelines);
 
-    const quizBank = await getQuizBankExport(subject.quizBank);
+    const quizBank = await getQuizBankExport(course.quizBank);
 
-    const surveyBank = await getSurveyBankExport(subject.surveyBank);
-
-    subject = {
-        timelines: timelines,
+    course = {
         quizBank: quizBank,
-        surveyBank: surveyBank
     }
 
-    res.attachment(`${subject.name}.json`)
+    res.attachment(`${course.name}.json`)
     res.type('json')
-    res.send(subject)
+    res.send(course)
 }
 
-exports.exportSubjectWithCondition = async (req, res) => {
-    const subject = await Course.findById(req.params.id);
-    if (!subject) {
-        throw new HttpNotFound("Not found subject");
-    }
-    let data = {};
+exports.getCloneOfAnotherCourse = async (req, res) => {
+    const course = req.course;
 
-    if (req.body.isTimelines) {
-        let timelines = await getTimelineExport(subject.timelines)
-        let surveyBank = await getSurveyBankExport(subject.surveyBank)
-        let quizBank = await getQuizBankExport(subject.quizBank)
-        data = {
-            timelines: timelines,
-            surveyBank: surveyBank,
-            quizBank: quizBank
-        }
-    } else {
-        if (req.body.isQuizBank) {
-            let quizBank = await getQuizBankExport(subject.quizBank);
-            quizBank = quizBank.map(value => { return { name: value.name, questions: value.questions } });
-            data['quizBank'] = quizBank
-
-        }
-        if (req.body.isSurveyBank) {
-            let surveyBank = await getSurveyBankExport(subject.surveyBank);
-            surveyBank = surveyBank.map(value => { return { name: value.name, questions: value.questions } });
-            data['surveyBank'] = surveyBank;
-        }
+    const clone = await Course.findById(req.body.cloneId);
+    if (!clone) {
+        throw new HttpNotFound(CourseResponseMessages.COURSE_NOT_FOUND);
     }
 
-    res.attachment(`${subject.name}.json`);
-    res.type('json');
-    res.send(data);
+    const quizBank = await getQuizBankExport(clone.quizBank);
+
+    const timelines = await getTimelineExport(clone.timelines);
+
+    course.quizBank = course.quizBank.concat(quizBank);
+
+    course.timelines = course.quizBank.concat(timelines);
+
+    await course.save();
+
+    res.json({
+        success: true,
+        message: CourseResponseMessages.IMPORT_DATA_SUCCESS,
+        timelines: await filterAndSortTimelines(course.timelines),
+        quizBank: await Promise.all(course.quizBank.map(value => {
+            return {
+                _id: value._id,
+                name: value.name,
+                questions: value.questions.length
+            }
+        }))
+    });
 }
 
 //Get Deadline
 exports.getDeadline = async (req, res) => {
-    const listSubject = await Course.find({ 'studentIds': req.student._id, isDeleted: false });
+    const courses = await Course.find({ 'studentIds': req.student._id, isDeleted: false });
     let deadline = [];
-    listSubject.forEach(subject => {
-        deadline = deadline.concat(getDeadlineOfSubject(subject, req.student));
+    courses.forEach(subject => {
+        deadline = deadline.concat(getDeadlineOfCourse(subject, req.student));
     });
 
     res.json({
@@ -732,7 +701,7 @@ exports.getDeadline = async (req, res) => {
 }
 
 exports.getDeadlineBySubject = async (req, res) => {
-    let deadline = getDeadlineOfSubject(req.subject, req.student);
+    let deadline = getDeadlineOfCourse(req.course, req.student);
 
     res.json({
         success: true,

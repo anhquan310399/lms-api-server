@@ -220,36 +220,57 @@ const getListAssignmentAndExam = async (subject, today) => {
 
 const getTimelineExport = async (timelines) => {
     const result = await Promise.all(timelines.map(async (timeline) => {
-        let surveys = await Promise.all(timeline.surveys.map(async (survey) => {
+        const surveys = await Promise.all(timeline.surveys.map(async (survey) => {
+
+            const questionnaire = await Promise.all(survey.questionnaire.map(async (question) => {
+                if (question.typeQuestion === 'choice' || question.typeQuestion === 'multiple') {
+                    const answers = question.answer.map(answer => {
+                        return answer.content;
+                    });
+                    return {
+                        question: question.question,
+                        answer: answers,
+                        typeQuestion: question.typeQuestion
+                    }
+                } else {
+                    return {
+                        question: question.question,
+                        typeQuestion: question.typeQuestion
+                    }
+                }
+            }));
+
             return {
                 name: survey.name,
                 description: survey.description,
-                code: survey.code,
-                expireTime: survey.expireTime
+                setting: survey.setting,
+                questionnaire: questionnaire,
             }
         }));
-        let forums = timeline.forums.map(forum => {
+
+        const forums = timeline.forums.map(forum => {
             return {
                 name: forum.name,
                 description: forum.description
             }
         });
-        let exams = timeline.exams.map(exam => {
+
+        const exams = timeline.exams.map(exam => {
             return {
                 name: exam.name,
                 content: exam.content,
-                startTime: exam.startTime,
-                expireTime: exam.expireTime,
                 setting: exam.setting
             }
         });
-        let announcements = timeline.announcements.map(info => {
+
+        const announcements = timeline.announcements.map(info => {
             return {
                 name: info.name,
                 content: info.content
             }
         });
-        let assignments = timeline.assignments.map(assignment => {
+
+        const assignments = timeline.assignments.map(assignment => {
             return {
                 name: assignment.name,
                 content: assignment.content,
@@ -257,6 +278,7 @@ const getTimelineExport = async (timelines) => {
                 setting: assignment.setting
             }
         });
+
         return {
             name: timeline.name,
             description: timeline.description,
@@ -270,33 +292,6 @@ const getTimelineExport = async (timelines) => {
         }
     }));
     return _.sortBy(result, ['index']);
-}
-
-const getSurveyBankExport = async (surveyBank) => {
-    return await Promise.all(surveyBank.map(async (questionnaire) => {
-        const questions = questionnaire.questions.map(question => {
-            if (question.typeQuestion === 'choice' || question.typeQuestion === 'multiple') {
-                const answers = question.answer.map(answer => {
-                    return answer.content;
-                });
-                return {
-                    question: question.question,
-                    answer: answers,
-                    typeQuestion: question.typeQuestion
-                }
-            } else {
-                return {
-                    question: question.question,
-                    typeQuestion: question.typeQuestion
-                }
-            }
-        });
-        return {
-            _id: questionnaire._id,
-            name: questionnaire.name,
-            questions: questions
-        }
-    }))
 }
 
 const getQuizBankExport = async (quizBank) => {
@@ -323,10 +318,10 @@ const getQuizBankExport = async (quizBank) => {
     }))
 }
 
-const getDeadlineOfSubject = (subject, student) => {
+const getDeadlineOfCourse = (course, student) => {
     let deadline = [];
     const today = new Date();
-    subject.timelines.forEach((timeline) => {
+    course.timelines.forEach((timeline) => {
         if (!timeline.isDeleted) {
             let exams = timeline.exams.reduce((preExams, currentExam) => {
                 if (currentExam.setting.expireTime.getTime() < today || currentExam.isDeleted) {
@@ -334,7 +329,7 @@ const getDeadlineOfSubject = (subject, student) => {
                 }
                 var submission = currentExam.submissions.find(value => value.idStudent.equals(student._id))
                 let exam = {
-                    idSubject: subject._id,
+                    idSubject: course._id,
                     idTimeline: timeline._id,
                     _id: currentExam._id,
                     name: currentExam.name,
@@ -351,7 +346,7 @@ const getDeadlineOfSubject = (subject, student) => {
                 }
                 let submission = currentAssignment.submissions.find(value => value.idStudent.equals(student._id));
                 let assignment = {
-                    idSubject: subject._id,
+                    idSubject: course._id,
                     idTimeline: timeline._id,
                     _id: currentAssignment._id,
                     name: currentAssignment.name,
@@ -369,7 +364,7 @@ const getDeadlineOfSubject = (subject, student) => {
                 }
                 let reply = currentSurvey.responses.find(value => value.idStudent.equals(student._id));
                 let survey = {
-                    idSubject: subject._id,
+                    idSubject: course._id,
                     idTimeline: timeline._id,
                     _id: currentSurvey._id,
                     name: currentSurvey.name,
@@ -449,9 +444,8 @@ module.exports = {
     filterAndSortTimelines,
     getListAssignmentAndExam,
     getTimelineExport,
-    getSurveyBankExport,
     getQuizBankExport,
-    getDeadlineOfSubject,
+    getDeadlineOfCourse,
     getCommonInfoTopic,
     getDetailComment,
     getInfoQuestionBank,

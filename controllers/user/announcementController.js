@@ -1,37 +1,40 @@
-const { getCommonData } = require('../../services/DataMapper');
-const { findTimeline, findAnnouncement } = require('../../services/DataSearcherThroughReq');
-exports.create = async(req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
+const { getCommonInfo } = require('../../services/DataHelpers');
+const { findTimeline, findAnnouncement } = require('../../services/FindHelpers');
+const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
+const { AnnounceResponseMessages } = ClientResponsesMessages
+
+exports.create = async (req, res) => {
+    const course = req.course;
+    const timeline = findTimeline(course, req.query.idTimeline);
     const announcement = {
         name: req.body.data.name,
         content: req.body.data.content
     };
     const length = timeline.announcements.push(announcement);
-    await subject.save();
+    await course.save();
     res.json({
         success: true,
-        message: 'Create new announcement successfully!',
-        announcement: getCommonData(timeline.announcements[length - 1])
+        message: AnnounceResponseMessages.CREATE_SUCCESS,
+        announcement: getCommonInfo(timeline.announcements[length - 1])
     });
 };
 
-exports.find = async(req, res) => {
-    const subject = req.subject;
-    const { announcement } = findAnnouncement(subject, req);
+exports.find = async (req, res) => {
+    const course = req.course;
+    const { announcement } = findAnnouncement(course, req.query.idTimeline, req.params.id);
 
     res.json({
         success: true,
-        announcement: getCommonData(announcement)
+        announcement: getCommonInfo(announcement)
     });
 
 };
 
-exports.findAll = async(req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
-    const announcement = await Promise.all(timeline.announcements.map(async(value) => {
-        return getCommonData(value);
+exports.findAll = async (req, res) => {
+    const course = req.course;
+    const timeline = findTimeline(course, req.query.idTimeline);
+    const announcement = await Promise.all(timeline.announcements.map(async (value) => {
+        return getCommonInfo(value);
     }));
     res.json({
         success: true,
@@ -39,31 +42,31 @@ exports.findAll = async(req, res) => {
     });
 };
 
-exports.update = async(req, res) => {
-    const subject = req.subject;
-    const { announcement } = findAnnouncement(subject, req);
+exports.update = async (req, res) => {
+    const course = req.course;
+    const { announcement } = findAnnouncement(course, req.query.idTimeline, req.params.id);
 
     announcement.name = req.body.data.name;
     announcement.content = req.body.data.content;
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
-        message: 'Update announcement successfully!',
-        announcement: getCommonData(announcement)
+        message: AnnounceResponseMessages.UPDATE_SUCCESS,
+        announcement: getCommonInfo(announcement)
     });
 };
 
-exports.delete = async(req, res) => {
-    const subject = req.subject;
-    const { timeline, announcement } = findAnnouncement(subject, req);
+exports.delete = async (req, res) => {
+    const course = req.course;
+    const { timeline, announcement } = findAnnouncement(course, req.query.idTimeline, req.params.id);
     const index = timeline.announcements.indexOf(announcement);
 
     timeline.announcements.splice(index, 1);
 
-    await subject.save();
+    await course.save();
     res.json({
         success: true,
-        message: "Delete information successfully!"
+        message: AnnounceResponseMessages.DELETE_SUCCESS
     });
 };

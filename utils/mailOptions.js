@@ -44,6 +44,20 @@ const MailTemplate = {
             subject: `[${course.name}] - ${isAccept ? 'Accept' : 'Deny'} Exit Request`,
             text: `Your request to exit course [${course.name}] has just ${isAccept ? 'accepted' : 'denied'}!`
         });
+    },
+    MAIL_CONFIRM_SUBMIT_ASSIGNMENT(student, assignment, course) {
+        return new MailOptions({
+            to: student.emailAddress,
+            subject: 'No reply this email',
+            text: `You currently submit to assignment "${assignment.name}" in course "${course.name}"`
+        });
+    },
+    MAIL_NOTIFY_SUBMISSION_IS_GRADED(student, assignment, course) {
+        return new MailOptions({
+            to: student.emailAddress,
+            course: 'No reply this email',
+            text: `Your submission for assignment "${assignment.name}" in course "${course.name}" is currently graded`
+        });
     }
 }
 

@@ -1,10 +1,11 @@
-const { getCommonData, getCommonInfoTopic } = require('../../services/DataMapper');
-const { findTimeline, findForum } = require('../../services/DataSearcherThroughReq');
-const PRIVILEGES = require("../../constants/PrivilegeCode");
+const { getCommonInfo, getCommonInfoTopic } = require('../../services/DataHelpers');
+const { findTimeline, findForum } = require('../../services/FindHelpers');
+const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
+const { ForumResponseMessages } = ClientResponsesMessages
 
 exports.create = async (req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
+    const course = req.course;
+    const timeline = findTimeline(course, req.query.idTimeline);
     const model = {
         name: req.body.data.name,
         description: req.body.data.description,
@@ -13,21 +14,21 @@ exports.create = async (req, res) => {
 
     const length = timeline.forums.push(model);
 
-    await subject.save()
+    await course.save()
 
     const forum = timeline.forums[length - 1];
     res.json({
         success: true,
-        message: 'Create new forum successfully!',
-        forum: getCommonData(forum)
+        message: ForumResponseMessages.CREATE_SUCCESS,
+        forum: getCommonInfo(forum)
     });
 };
 
 exports.find = async (req, res) => {
-    const subject = req.subject;
-    const { forum } = findForum(subject, req);
-    const topics = await Promise.all(forum.topics.map(async value => {
-        return getCommonInfoTopic(value);
+    const course = req.course;
+    const { forum } = findForum(course, req.query.idTimeline, req.params.id, req.isStudent);
+    const topics = await Promise.all(forum.topics.map(async topic => {
+        return getCommonInfoTopic(topic);
     }))
     res.json({
         _id: forum._id,
@@ -39,8 +40,8 @@ exports.find = async (req, res) => {
 };
 
 exports.findUpdate = async (req, res) => {
-    const subject = req.subject;
-    const { forum } = findForum(subject, req);
+    const course = req.course;
+    const { forum } = findForum(course, req.query.idTimeline, req.params.id);
 
     res.json({
         success: true,
@@ -54,23 +55,25 @@ exports.findUpdate = async (req, res) => {
 };
 
 exports.findAll = async (req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
-    const index = subject.timelines.indexOf(timeline);
+    const course = req.course;
+    const timeline = findTimeline(course, req.query.idTimeline, req.isStudent);
 
-    let forums = subject.timelines[index].forums;
+    const forums = Promise.all(timeline.forums.reduce(async (result, forum) => {
 
-    forums = forums.reduce((res, value) => {
-        if (!(value.isDeleted && req.user.idPrivilege !== PRIVILEGES.TEACHER)) {
-            res.push({
+        result = await result;
+
+        if (forum.isDeleted && req.isStudent) {
+            return result;
+        } else {
+            return [...result, {
                 _id: value._id,
                 name: value.name,
                 description: value.description,
-                isDeleted: req.user.idPrivilege !== PRIVILEGES.TEACHER ? undefined : value.isDeleted
-            })
+                isDeleted: req.isStudent ? undefined : forum.isDeleted
+            }]
         }
-        return res;
-    }, [])
+
+    }, []))
     res.json({
         success: true,
         forums: forums
@@ -78,8 +81,9 @@ exports.findAll = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-    const subject = req.subject;
-    const { forum } = findForum(subject, req);
+    const course = req.course;
+    const { forum } = findForum(course, req.query.idTimeline, req.params.id);
+
     const data = req.body.data;
     if (data.name) {
         forum.name = data.name;
@@ -90,38 +94,43 @@ exports.update = async (req, res) => {
 
     forum.isDeleted = data.isDeleted || false;
 
-    await subject.save()
+    await course.save();
+
     res.json({
         success: true,
-        message: 'Update forum successfully!',
-        forum: getCommonData(forum)
+        message: ForumResponseMessages.UPDATE_SUCCESS,
+        forum: getCommonInfo(forum)
     });
 };
 
-exports.hideOrUnhide = async (req, res) => {
-    const subject = req.subject;
-    const { forum } = findForum(subject, req);
+exports.lock = async (req, res) => {
+    const course = req.course;
+    const { forum } = findForum(course, req.query.idTimeline, req.params.id);
+
     forum.isDeleted = !forum.isDeleted;
 
-    await subject.save()
+    await course.save()
 
     res.send({
         success: true,
-        message: `${forum.isDeleted ? "Hide" : "Unhide"} forum ${forum.name} successfully!`,
-        forum: getCommonData(forum)
+        message: ForumResponseMessages.LOCK_MESSAGE(forum),
+        forum: getCommonInfo(forum)
     });
 };
 
 exports.delete = async (req, res) => {
-    const subject = req.subject;
-    const { timeline, forum } = findForum(subject, req);
+    const course = req.course;
+    const { timeline, forum } = findForum(course, req.query.idTimeline, req.params.id);
+
     const index = timeline.forums.indexOf(forum);
 
     timeline.forums.splice(index, 1);
-    await subject.save()
+
+    await course.save();
+
     res.json({
         success: true,
-        message: "Delete forum successfully!"
+        message: ForumResponseMessages.DELETE_SUCCESS
     });
 
 };

@@ -139,6 +139,46 @@ const ClientResponsesMessages = {
         },
         UPLOAD_FILE_SUCCESS: 'Upload file successfully!',
         DELETE_FILE_SUCCESS: 'Delete file successfully!'
+    },
+    AnnounceResponseMessages: {
+        CREATE_SUCCESS: 'Create new announcement successfully!',
+        UPDATE_SUCCESS: 'Update announcement successfully!',
+        DELETE_SUCCESS: 'Delete information successfully!',
+    },
+    AssignResponseMessages: {
+        CREATE_SUCCESS: 'Create new assignment successfully!',
+        UPDATE_SUCCESS: 'Update assignment successfully!',
+        DELETE_SUCCESS: 'Delete assignment successfully!',
+        LOCK_MESSAGE({ isDeleted: status, name }) {
+            return `${status ? 'Hide' : 'Show'} assignment ${name} successfully!`
+        },
+        SUBMISSION_IS_GRADED: `Assignment was graded, can't submit!`,
+        ASSIGNMENT_NOT_OPEN: `The assignment has been not opened`,
+        ASSIGNMENT_IS_OVERDUE: 'The assignment is overdue',
+        NOT_FOUND_SUBMISSION: 'Not found submission',
+        GRADE_SUBMISSION_SUCCESS({ code: studentCode }) {
+            `Grade submission of student with code: ${studentCode} successfully!`
+        },
+        SUBMISSION_IS_GRADED_CANT_COMMENT: `The submission hasn't been graded. Can't comment`,
+        COMMENT_FEEDBACK_SUBMISSION_SUCCESS: 'Comment feedback of submission successfully!',
+    },
+    ForumResponseMessages: {
+        CREATE_SUCCESS: 'Create new forum successfully!',
+        UPDATE_SUCCESS: 'Update forum successfully!',
+        LOCK_MESSAGE({ isDeleted: status, name }) {
+            return `${status ? 'Hide' : 'Show'} forum ${name} successfully!`
+        },
+        DELETE_SUCCESS: 'Delete forum successfully!'
+    },
+    TopicResponseMessages: {
+        CREATE_SUCCESS: 'Create new topic successfully!',
+        TOPIC_IS_NOT_OWN: `You isn't the topic creator. You can't change this topic!`,
+        UPDATE_SUCCESS: 'Update topic successfully!',
+        DELETE_SUCCESS: 'Delete topic successfully!',
+        NOT_FOUND_DISCUSSION: 'Not found discussion',
+        DISCUSSION_IS_NOT_OWN: `You isn't the discussion creator. You can't change this discussion!`,
+        UPDATE_DISCUSSION_SUCCESS: 'Update discussion successfully!',
+        DELETE_DISCUSSION_SUCCESS: `Delete Discussion Successfully!`,
     }
 }
 

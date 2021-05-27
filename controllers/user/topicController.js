@@ -1,13 +1,14 @@
-const mongoose = require("mongoose");
-const User = mongoose.model("User");
 const { HttpNotFound, HttpUnauthorized } = require('../../utils/errors');
-const { getCommonInfoTopic, getDetailComment } = require('../../services/DataMapper');
-const { findForum, findTopic } = require('../../services/DataSearcherThroughReq');
+const { getCommonInfoTopic, getDetailComment, getUserById } = require('../../services/DataHelpers');
+const { findForum, findTopic } = require('../../services/FindHelpers');
 const DETAILS = require("../../constants/AccountDetail");
+const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
+const { TopicResponseMessages } = ClientResponsesMessages
+
 
 exports.create = async (req, res) => {
-    const subject = req.subject;
-    const { forum } = findForum(subject, req);
+    const course = req.course;
+    const { forum } = findForum(course, req.query.idTimeline, req.query.idForum, req.isStudent);
     const model = {
         name: req.body.data.name,
         content: req.body.data.content,
@@ -16,23 +17,26 @@ exports.create = async (req, res) => {
 
     const length = forum.topics.push(model);
 
-    await subject.save()
+    await course.save();
+
     const topic = forum.topics[length - 1];
+
     res.json({
         success: true,
-        message: 'Create new topic successfully!',
+        message: TopicResponseMessages.CREATE_SUCCESS,
         topic: await getCommonInfoTopic(topic)
     });
 };
 
 exports.find = async (req, res) => {
-    const subject = req.subject;
-    const { topic } = findTopic(subject, req);
+    const course = req.course;
+    const { topic } = findTopic(course, req.query.idTimeline, req.query.idForum, req.params.idTopic, req.isStudent);
+
     const discussions = await Promise.all(topic.discussions.map(async function (value) {
         return getDetailComment(value);
     }));
 
-    const creator = await User.findById(topic.idUser, DETAILS.COMMON)
+    const creator = await getUserById(topic.idUser, DETAILS.COMMON)
 
     res.json({
         success: true,
@@ -48,44 +52,48 @@ exports.find = async (req, res) => {
 };
 
 exports.update = async (req, res) => {
-    const subject = req.subject;
-    const { topic } = findTopic(subject, req);
+    const course = req.course;
+    const { topic } = findTopic(course, req.body.idTimeline, req.body.idForum, req.params.idTopic, req.isStudent);
+
     if (!topic.idUser.equals(req.user._id)) {
-        throw new HttpUnauthorized("You isn't the topic creator. You can't change this topic!");
+        throw new HttpUnauthorized(TopicResponseMessages.TOPIC_IS_NOT_OWN);
     }
+
     topic.name = req.body.data.name;
     topic.content = req.body.data.content;
-    await subject.save()
+
+    await course.save()
     res.json({
         success: true,
-        message: 'Update topic successfully!',
+        message: TopicResponseMessages.UPDATE_SUCCESS,
         topic: await getCommonInfoTopic(topic)
     });
 };
 
 exports.delete = async (req, res) => {
-    const subject = req.subject
-    const { forum, topic } = findTopic(subject, req);
+    const course = req.course;
+
+    const { forum, topic } = findTopic(course, req.query.idTimeline, req.query.idForum, req.params.idTopic, req.isStudent);
 
     if (!topic.idUser.equals(req.user._id)) {
-        throw new HttpUnauthorized("You isn't the topic creator. You can't delete this topic!");
+        throw new HttpUnauthorized(TopicResponseMessages.TOPIC_IS_NOT_OWN);
     }
 
-    const indexTopic = forum.topics.indexOf(topic);
+    const index = forum.topics.indexOf(topic);
 
-    forum.topics.splice(indexTopic, 1);
+    forum.topics.splice(index, 1);
 
-    await subject.save()
+    await course.save();
 
     res.json({
         success: false,
-        message: "Delete topic successfully!"
+        message: TopicResponseMessages.DELETE_SUCCESS
     });
 };
 
 exports.discuss = async (req, res) => {
-    const subject = req.subject;
-    const { topic } = findTopic(subject, req);
+    const course = req.course;
+    const { topic } = findTopic(course, req.body.idTimeline, req.body.idForum, req.params.idTopic, req.isStudent);
 
     const model = {
         content: req.body.data.content,
@@ -94,7 +102,7 @@ exports.discuss = async (req, res) => {
 
     const length = topic.discussions.push(model);
 
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
@@ -103,39 +111,53 @@ exports.discuss = async (req, res) => {
 };
 
 exports.updateDiscussion = async (req, res) => {
-    const subject = req.subject
-    const { topic } = findTopic(subject, req);
+    const course = req.course;
+
+    const { topic } = findTopic(course, req.body.idTimeline, req.body.idForum, req.params.idTopic, req.isStudent);
+
     const discussion = topic.discussions.find(value => value._id.equals(req.params.idDiscussion));
+
     if (!discussion) {
-        throw new HttpNotFound("Not found discussion");
+        throw new HttpNotFound(TopicResponseMessages.NOT_FOUND_DISCUSSION);
     }
+
     if (!discussion.idUser.equals(req.user._id)) {
-        throw new HttpUnauthorized("You isn't the discussion creator. You can't change this discussion!");
+        throw new HttpUnauthorized(TopicResponseMessages.DISCUSSION_IS_NOT_OWN);
     }
+
     discussion.content = req.body.data.content;
-    await subject.save();
+
+    await course.save();
     res.send({
         success: true,
-        message: "Update discussion successfully!",
+        message: TopicResponseMessages.UPDATE_DISCUSSION_SUCCESS,
         discussion: await getDetailComment(discussion)
     });
 };
 
 exports.deleteDiscussion = async (req, res) => {
-    const subject = req.subject;
-    const { topic } = findTopic(subject, req);
+    const course = req.course;
+
+    const { topic } = findTopic(course, req.body.idTimeline, req.body.idForum, req.params.idTopic, req.isStudent);
+
     const discussion = topic.discussions.find(value => value._id.equals(req.params.idDiscussion));
+
     if (!discussion) {
-        throw new HttpNotFound("Not found discussion");
+        throw new HttpNotFound(TopicResponseMessages.NOT_FOUND_DISCUSSION);
     }
+
     if (!discussion.idUser.equals(req.user._id)) {
-        throw new HttpUnauthorized("You isn't the discussion creator. You can't delete this discussion!");
+        throw new HttpUnauthorized(TopicResponseMessages.DISCUSSION_IS_NOT_OWN);
     }
+
     const index = topic.discussions.indexOf(discussion);
+
     topic.discussions.splice(index, 1);
-    await subject.save()
+
+    await course.save();
+
     res.send({
         success: true,
-        message: "Delete Discussion Successfully!"
+        message: TopicResponseMessages.DELETE_DISCUSSION_SUCCESS
     });
 };

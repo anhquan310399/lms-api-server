@@ -1,17 +1,16 @@
-const mongoose = require("mongoose");
-const User = mongoose.model("User");
 const moment = require('moment');
 const { HttpNotFound, HttpUnauthorized } = require('../../utils/errors');
-const { getCommonData } = require('../../services/DataMapper');
-const { findTimeline, findAssignment } = require('../../services/DataSearcherThroughReq');
+const { getCommonInfo, getUserById } = require('../../services/DataHelpers');
+const { findTimeline, findAssignment } = require('../../services/FindHelpers');
 const { sendMail } = require('../../services/SendMail');
-const { MailOptions } = require('../../utils/mailOptions');
+const { MailTemplate } = require('../../utils/mailOptions');
 const DETAILS = require("../../constants/AccountDetail");
-const PRIVILEGES = require("../../constants/PrivilegeCode");
+const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
+const { AssignResponseMessages } = ClientResponsesMessages
 
 exports.create = async (req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
+    const course = req.course;
+    const timeline = findTimeline(course, req.query.idTimeline);
     const data = req.body.data;
     const model = {
         name: data.name,
@@ -26,22 +25,23 @@ exports.create = async (req, res) => {
         attachments: data.file,
         isDeleted: data.isDeleted
     };
-    let length = timeline.assignments.push(model);
-    await subject.save();
-    const assignment = getCommonData(timeline.assignments[length - 1]);
+    const length = timeline.assignments.push(model);
+    await course.save();
+    const assignment = getCommonInfo(timeline.assignments[length - 1]);
     res.json({
         success: true,
-        assignment
+        assignment,
+        message: AssignResponseMessages.CREATE_SUCCESS
     });
 };
 
 exports.find = async (req, res) => {
-    const subject = req.subject;
-    const { assignment } = findAssignment(subject, req);
+    const course = req.course;
+    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id, req.isStudent);
     const today = new Date();
     const timingRemain = moment(assignment.setting.expireTime).from(moment(today));
 
-    if (req.user.idPrivilege === PRIVILEGES.STUDENT || req.user.idPrivilege === PRIVILEGES.REGISTER) {
+    if (req.isStudent) {
         const submission = await assignment.submissions.find(value => value.idStudent.equals(req.user._id));
 
         let isCanSubmit = false;
@@ -75,12 +75,9 @@ exports.find = async (req, res) => {
             }
         })
     } else {
-        let submissions = await Promise.all(assignment.submissions
+        const submissions = await Promise.all(assignment.submissions
             .map(async function (submit) {
-                var student = await User.findById(submit.idStudent, DETAILS.COMMON)
-                    .then(value => {
-                        return value
-                    });
+                const student = await getUserById(submit.idStudent, DETAILS.COMMON);
                 return {
                     _id: submit._id,
                     student: student,
@@ -107,8 +104,8 @@ exports.find = async (req, res) => {
 };
 
 exports.findUpdate = async (req, res) => {
-    const subject = req.subject;
-    const { assignment } = findAssignment(subject, req);
+    const course = req.course;
+    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id);
 
     res.send({
         success: true,
@@ -125,17 +122,24 @@ exports.findUpdate = async (req, res) => {
 };
 
 exports.findAll = async (req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
-    const assignments = await Promise.all(timeline.assignments.map(async (value) => {
-        return {
-            _id: value._id,
-            name: value.name,
-            content: value.content,
-            startTime: value.setting.startTime,
-            expireTime: value.setting.expireTime
+    const course = req.course;
+    const timeline = findTimeline(course, req.query.idTimeline, req.isStudent);
+    const assignments = await Promise.all(timeline.assignments.reduce(async (result, curAssignment) => {
+        result = await result;
+        if (curAssignment.isDeleted && req.isStudent) {
+            return result;
+        } else {
+            return [...result,
+            {
+                _id: value._id,
+                name: value.name,
+                content: value.content,
+                startTime: value.setting.startTime,
+                expireTime: value.setting.expireTime
+            }]
         }
-    }));
+
+    }, []));
     res.json({
         success: true,
         assignments
@@ -144,8 +148,9 @@ exports.findAll = async (req, res) => {
 
 exports.update = async (req, res) => {
     const data = req.body.data;
-    const subject = req.subject;
-    const { assignment } = findAssignment(subject, req);
+    const course = req.course;
+    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id);
+
     if (data.name) {
         assignment.name = data.name;
     }
@@ -167,45 +172,47 @@ exports.update = async (req, res) => {
         assignment.attachments = data.file;
     }
 
-    await subject.save();
+    await course.save();
 
     res.json({
         success: true,
-        message: 'Update assignment successfully!',
-        assignment: getCommonData(assignment)
+        message: AssignResponseMessages.UPDATE_SUCCESS,
+        assignment: getCommonInfo(assignment)
     });
 };
 
 exports.delete = async (req, res) => {
-    const subject = req.subject;
-    const { timeline, assignment } = findAssignment(subject, req);
+    const course = req.course;
+    const { timeline, assignment } = findAssignment(course, req.query.idTimeline, req.params.id);
+
     const indexAssignment = timeline.assignments.indexOf(assignment);
     timeline.assignments.splice(indexAssignment, 1);
 
-    await subject.save();
+    await course.save();
     res.json({
         success: true,
-        message: "Delete Assignment Successfully!"
+        message: AssignResponseMessages.DELETE_SUCCESS
     });
 };
 
-exports.hideOrUnhide = async (req, res) => {
-    const subject = req.subject;
-    const { assignment } = findAssignment(subject, req);
+exports.lock = async (req, res) => {
+    const course = req.course;
+    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id);
+
     assignment.isDeleted = !assignment.isDeleted;
 
-    await subject.save();
-    const message = `${assignment.isDeleted ? 'Hide' : 'Unhide'} assignment ${assignment.name} successfully!`;
+    await course.save();
+
     res.send({
         success: true,
-        message,
-        assignment: getCommonData(assignment)
+        message: AssignResponseMessages.LOCK_MESSAGE(assignment),
+        assignment: getCommonInfo(assignment)
     });
 };
 
 exports.submit = async (req, res) => {
-    const subject = req.subject;
-    const { assignment } = findAssignment(subject, req);
+    const course = req.course;
+    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id, true);
 
     const today = new Date();
     const setting = assignment.setting;
@@ -218,7 +225,7 @@ exports.submit = async (req, res) => {
             type: req.body.file.type,
             uploadDay: new Date()
         }
-        var index = 0;
+        let index = 0;
         const submitted = assignment.submissions.find(value => value.idStudent.equals(req.student._id));
         if (submitted) {
             if (!submitted.feedBack) {
@@ -226,7 +233,7 @@ exports.submit = async (req, res) => {
                 submitted.submitTime = today;
                 submitted.file = file;
             } else {
-                throw new HttpUnauthorized("Assignment was graded, can't submit!");
+                throw new HttpUnauthorized(AssignResponseMessages.SUBMISSION_IS_GRADED);
             }
         } else {
             var submission = {
@@ -236,79 +243,73 @@ exports.submit = async (req, res) => {
             }
             index = assignment.submissions.push(submission) - 1;
         }
-        await subject.save();
+        await course.save();
 
-        const mailOptions = new MailOptions({
-            to: req.student.emailAddress,
-            subject: 'No reply this email',
-            text: `You currently submit to assignment "${assignment.name}" in subject "${subject.name}"`
-        });
+        const mailOptions = MailTemplate.MAIL_CONFIRM_SUBMIT_ASSIGNMENT(req.student, assignment, course);
         sendMail(mailOptions);
         res.json({
             success: true,
             submission: assignment.submissions[index]
         });
     } else {
-        let message = "";
+        let message;
         if (today <= setting.startTime) {
-            message = "The assignment has been not opened";
+            message = AssignResponseMessages.ASSIGNMENT_NOT_OPEN;
         } else {
-            message = "The assignment is overdue";
+            message = AssignResponseMessages.ASSIGNMENT_IS_OVERDUE;
         }
         throw new HttpUnauthorized(message);
     }
 };
 
 exports.gradeSubmission = async (req, res) => {
-    const subject = req.subject;
-    const { assignment } = findAssignment(subject, req);
+    const course = req.course;
+    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id);
 
     const submitted = assignment.submissions.find(value => value._id.equals(req.params.idSubmission));
     if (!submitted) {
-        throw new HttpNotFound("Not found submission");
+        throw new HttpNotFound(AssignResponseMessages.NOT_FOUND_SUBMISSION);
     }
     submitted.feedBack = {
         grade: req.body.grade,
         gradeOn: new Date(),
-        gradeBy: req.lecture._id
+        gradeBy: req.teacher._id
     }
 
-    await subject.save();
-    const student = await User.findById(submitted.idStudent, DETAILS.COMMON);
+    await course.save();
 
-    const mailOptions = new MailOptions({
-        to: student.emailAddress,
-        subject: 'No reply this email',
-        text: `Your submission for assignment "${assignment.name}" in subject "${subject.name}" is currently graded`
-    });
+    const student = await getUserById(submitted.idStudent, DETAILS.COMMON);
+
+    const mailOptions = MailTemplate.MAIL_NOTIFY_SUBMISSION_IS_GRADED(student, assignment, course);
+
     sendMail(mailOptions);
 
     res.json({
         success: true,
-        message: `Grade submission of student with code: ${student.code} successfully!`,
+        message: AssignResponseMessages.GRADE_SUBMISSION_SUCCESS(student),
         feedBack: submitted.feedBack
     });
 }
 
 exports.commentFeedback = async (req, res) => {
-    const subject = req.subject;
-    const { assignment } = findAssignment(subject, req);
+    const course = req.course;
+    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id, req.isStudent);
 
     const submitted = assignment.submissions.find(value => value._id.equals(req.params.idSubmission));
     if (!submitted) {
-        throw new HttpNotFound("Not found submission");
+        throw new HttpNotFound(AssignResponseMessages.NOT_FOUND_SUBMISSION);
     }
     if (typeof submitted.feedBack == 'undefined') {
-        throw new HttpUnauthorized("The submission hasn't been graded. Can't comment");
+        throw new HttpUnauthorized(AssignResponseMessages.SUBMISSION_IS_GRADED_CANT_COMMENT);
     }
     submitted.feedBack.comments.push({
         content: req.body.comment,
         idUser: req.user._id
     })
 
-    await subject.save();
+    await course.save();
     const comments = await Promise.all(submitted.feedBack.comments.map(async (comment) => {
-        const user = await User.findById(comment.idUser, DETAILS.COMMON);
+        const user = await getUserById(comment.idUser, DETAILS.COMMON);
         return {
             _id: comment._id,
             user: user,
@@ -317,7 +318,7 @@ exports.commentFeedback = async (req, res) => {
     }));
     res.json({
         success: true,
-        message: 'Comment feedback of submission successfully!',
+        message: AssignResponseMessages.COMMENT_FEEDBACK_SUBMISSION_SUCCESS,
         comments: comments
     });
 }

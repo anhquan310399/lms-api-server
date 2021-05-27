@@ -101,10 +101,14 @@ exports.authInCourse = (req, res, next) => {
                     }, {
                         idTeacher: user._id
                     }]
-                })
+                });
+
+                const isStudent = user.idPrivilege !== PRIVILEGES.TEACHER ? true : false;
+
                 if (course) {
                     req.user = user;
                     req.course = course;
+                    req.isStudent = isStudent;
                     next();
                 } else {
                     next(new HttpNotFound(AuthResponseMessages.NOT_FOUND_COURSE));

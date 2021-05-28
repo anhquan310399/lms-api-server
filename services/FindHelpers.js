@@ -9,6 +9,7 @@ const Messages = {
     NOT_FOUND_EXAM: 'Not found exam',
     NOT_FOUND_SURVEY: 'Not found survey',
     NOT_FOUND_FILE: 'Not found file',
+    NOT_FOUND_QUIZ_BANK: 'Not found quiz bank'
 }
 
 const findTimeline = (course, idTimeline, isStudent) => {
@@ -82,7 +83,13 @@ const findFile = (course, idTimeline, idFile, isStudent) => {
     }
     return { timeline, file };
 }
-
+const findChapterOfQuizBank = (course, chapterId) => {
+    const chapter = course.quizBank.find(value => value._id.equals(chapterId));
+    if (!chapter) {
+        throw new HttpNotFound(Messages.NOT_FOUND_QUIZ_BANK);
+    }
+    return chapter;
+}
 module.exports = {
     findTimeline,
     findForum,
@@ -91,5 +98,6 @@ module.exports = {
     findAnnouncement,
     findExam,
     findSurvey,
-    findFile
+    findFile,
+    findChapterOfQuizBank
 }

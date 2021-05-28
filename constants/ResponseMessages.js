@@ -179,6 +179,25 @@ const ClientResponsesMessages = {
         DISCUSSION_IS_NOT_OWN: `You isn't the discussion creator. You can't change this discussion!`,
         UPDATE_DISCUSSION_SUCCESS: 'Update discussion successfully!',
         DELETE_DISCUSSION_SUCCESS: `Delete Discussion Successfully!`,
+    },
+    ExamResponseMessages: {
+        CREATE_SUCCESS: 'Create new exam successfully',
+        EXAM_HAS_SUBMISSION: `Exam already has submissions. Can't change setting of exam!`,
+        UPDATE_SUCCESS: 'Update exam successfully!',
+        DELETE_SUCCESS: 'Delete exam successfully!',
+        LOCK_MESSAGE({ isDeleted: status, name }) {
+            return `${status ? 'Hide' : 'Show'} exam ${name} successfully!`;
+        },
+        SUBMIT_SUCCESS: 'Submit submission successfully!',
+        NOT_FOUND_SUBMISSION: 'Not found submission!',
+        IS_SUBMITTED: 'You have already submitted!',
+        TIME_OUT: 'Test time out',
+        NUMBER_ATTEMPT_RUN_OUT: 'The number of entries has been exceeded!',
+        EXAM_NOT_OPEN: `The exam has been not opened`,
+        EXAM_IS_OVERDUE: 'The exam is overdue',
+    },
+    SurveyResponseMessages: {
+        CREATE_SUCCESS: 'Create new survey successfully',
     }
 }
 

@@ -189,7 +189,10 @@ const ExamValidate = {
     SETTING_EXPIRE_TIME_VALID: "Expire time must be more than start time",
     NOT_FOUND_QUESTIONNAIRE(id) {
         return `Can't not found questionnaire with ${id} in quiz bank!`
-    }
+    },
+    QUESTIONNAIRE_HAS_LOWER_QUESTION(chapter) {
+        return `Chapter ${chapter.name} has only ${chapter.questions.length} questions`
+    },
 }
 
 module.exports = {

@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const schemaTitle = require("../../constants/SchemaTitle");
+const { findChapterOfQuizBank } = require('../../services/FindHelpers');
 
 const studentAnswer = new mongoose.Schema({
     idQuestion: {
@@ -39,47 +40,72 @@ const studentAnswerSheet = new mongoose.Schema({
 studentAnswerSheet.pre('save', async function (next) {
     const answerSheet = this;
     if (!answerSheet.isNew && answerSheet.isModified('answers')) {
+
         const exam = answerSheet.parent();
-        const quizBank = answerSheet.parent().parent().parent().quizBank
-            .find(value => {
-                return value._id.equals(exam.setting.code);
+
+        // exam -> timeline -> course
+        const course = exam.parent().parent();
+
+        let totalQuestion = 0;
+
+        const questions = Promise.all(exam.setting.questionnaires.reduce(async (result, current) => {
+
+            totalQuestion += current.questionCount;
+
+            const chapter = findChapterOfQuizBank(course, current.id);
+
+            const questions = await result;
+
+            questions = questions.concat(chapter.questions);
+
+            return questions;
+        }, []));
+
+        const correct = await answerSheet.answers.reduce(async (result, currentAnswer) => {
+
+            const question = questions.find(function (question) {
+                return (question._id.equals(currentAnswer.idQuestion));
             });
-        let amount = await answerSheet.answers.reduce(async function (res, current) {
-            let question = await quizBank.questions.find(function (value) {
-                return (value._id.equals(current.idQuestion));
-            });
+
             let grade = 0;
 
             if (question.typeQuestion === 'choice') {
-                let correctAnswer = question.answers.find(answer => {
+
+                const correctAnswer = question.answers.find(answer => {
                     return answer.isCorrect;
                 });
-                if (correctAnswer._id.equals(current.idAnswer)) {
+
+                if (correctAnswer._id.equals(currentAnswer.idAnswer)) {
                     grade++;
                 }
+
             } else if (question.typeQuestion === 'multiple') {
-                let correctAnswers = question.answers.filter(answer => {
+
+                const correctAnswers = question.answers.filter(answer => {
                     return answer.isCorrect;
                 });
-                if (current.idAnswer.length <= correctAnswers.length) {
+
+                if (currentAnswer.idAnswer.length <= correctAnswers.length) {
+
                     correctAnswers.forEach(answer => {
-                        current.idAnswer.forEach(element => {
+                        currentAnswer.idAnswer.forEach(element => {
                             if (answer._id.equals(element)) {
                                 grade++;
                                 return;
                             }
                         });
                     });
+
                     grade /= correctAnswers.length;
                 }
             }
-            return (await res) + grade;
+            return (await result) + grade;
         },
             0);
 
-        let factor = 10 / exam.setting.questionCount;
+        const factor = 10 / totalQuestion;
 
-        answerSheet.grade = (amount * factor).toFixed(2);
+        answerSheet.grade = (correct * factor).toFixed(2);
     }
     next();
 })

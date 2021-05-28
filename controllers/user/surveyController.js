@@ -1,37 +1,52 @@
 const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../../utils/errors');
-const { getCommonData } = require('../../services/DataMapper');
-const { findTimeline, findSurvey, findSurveyBank } = require('../../services/DataSearcherThroughReq');
+const { getCommonInfo } = require('../../services/DataHelpers');
+const { findTimeline, findSurvey, findSurveyBank } = require('../../services/FindHelpers');
 const moment = require('moment');
 const PRIVILEGES = require("../../constants/PrivilegeCode");
+const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
+const { SurveyResponseMessages } = ClientResponsesMessages
+
+const createQuestionnaire = (questions) => {
+
+}
 
 exports.create = async (req, res) => {
-    const subject = req.subject;
-    const timeline = findTimeline(subject, req);
+    const course = req.course;
+
+    const timeline = findTimeline(course, req.query.idTimeline);
+
     const data = req.body.data;
-    const surveyBank = findSurveyBank(subject, data.code);
+
+    const questionnaire = createQuestionnaire(data.questions)
+
     const model = {
         name: data.name,
         description: data.description,
-        code: surveyBank._id,
-        expireTime: new Date(data.expireTime),
-        isDeleted: data.isDeleted || false
+        setting: data.setting,
+        questionnaire: questionnaire,
+        isDeleted: data.isDeleted,
     };
     const length = timeline.surveys.push(model);
-    await subject.save();
+
+    await course.save();
+
     res.json({
         success: true,
-        message: "Create survey successfully!",
-        survey: getCommonData(timeline.surveys[length - 1])
+        message: SurveyResponseMessages.CREATE_SUCCESS,
+        survey: getCommonInfo(timeline.surveys[length - 1])
     });
 };
 
 exports.find = async (req, res) => {
-    const subject = req.subject;
-    const { survey } = findSurvey(subject, req);
+    const course = req.course;
+
+    const { survey } = findSurvey(course, req.query.idTimeline, req.params.id, req.isStudent);
+
     const today = new Date();
     const isRemain = today > survey.expireTime ? false : true;
     const timeRemain = moment(survey.expireTime).from(moment(today));
-    if (req.user.idPrivilege === PRIVILEGES.STUDENT || req.user.idPrivilege === PRIVILEGES.REGISTER) {
+
+    if (req.isStudent) {
         const reply = survey.responses.find(value => value.idStudent.equals(req.user._id));
         res.json({
             success: true,
@@ -63,9 +78,9 @@ exports.find = async (req, res) => {
 }
 
 exports.findUpdate = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const { survey } = findSurvey(subject, req);
+    const { survey } = findSurvey(course, req);
 
     res.json({
         success: true,
@@ -81,11 +96,11 @@ exports.findUpdate = async (req, res) => {
 }
 
 exports.findAll = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const timeline = findTimeline(subject, req);
+    const timeline = findTimeline(course, req);
     const surveys = timeline.surveys.map(survey => {
-        return getCommonData(survey);
+        return getCommonInfo(survey);
     })
     res.send({
         success: true,
@@ -95,8 +110,8 @@ exports.findAll = async (req, res) => {
 }
 
 exports.update = async (req, res) => {
-    const subject = req.subject;
-    const { survey } = findSurvey(subject, req);
+    const course = req.course;
+    const { survey } = findSurvey(course, req);
     const data = req.body.data;
     if (data.name) { survey.name = data.name; }
     if (data.description) { survey.description = data.description; }
@@ -105,46 +120,46 @@ exports.update = async (req, res) => {
         if (survey.responses.length > 0) {
             throw new HttpBadRequest("Survey has already responses. Can't change questionnaire of survey");
         } else {
-            const surveyBank = findSurveyBank(subject, data.code);
+            const surveyBank = findSurveyBank(course, data.code);
             survey.code = surveyBank._id;
         }
     }
     survey.isDeleted = data.isDeleted || false;
 
-    await subject.save()
+    await course.save()
     res.json({
         success: true,
         message: 'Update survey successfully!',
-        survey: getCommonData(survey)
+        survey: getCommonInfo(survey)
     })
 
 }
 
 exports.hideOrUnhide = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const { survey } = findSurvey(subject, req);
+    const { survey } = findSurvey(course, req);
 
     survey.isDeleted = !survey.isDeleted;
 
-    await subject.save()
+    await course.save()
     const message = `${survey.isDeleted ? 'Hide' : 'Unhide'} survey ${survey.name} successfully!`;
     res.send({
         success: true,
         message: message,
-        survey: getCommonData(survey)
+        survey: getCommonInfo(survey)
     })
 }
 
 exports.delete = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const { survey, timeline } = findSurvey(subject, req);
+    const { survey, timeline } = findSurvey(course, req);
 
     const index = timeline.surveys.indexOf(survey);
     timeline.surveys.splice(index, 1);
 
-    await subject.save()
+    await course.save()
     res.json({
         success: true,
         message: "Delete survey successfully!"
@@ -152,15 +167,15 @@ exports.delete = async (req, res) => {
 }
 
 exports.attemptSurvey = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const { survey } = findSurvey(subject, req);
+    const { survey } = findSurvey(course, req);
 
     const reply = survey.responses.find(value => value.idStudent.equals(req.student._id));
     if (reply) {
         throw new HttpUnauthorized(`You have already reply survey ${survey.name}`)
     }
-    const questionnaire = subject.surveyBank.find(value => value._id.equals(survey.code));
+    const questionnaire = course.surveyBank.find(value => value._id.equals(survey.code));
 
     res.send({
         success: true,
@@ -173,9 +188,9 @@ exports.attemptSurvey = async (req, res) => {
 }
 
 exports.replySurvey = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const { survey } = findSurvey(subject, req);
+    const { survey } = findSurvey(course, req);
 
     const replied = survey.responses.find(value => value.idStudent.equals(req.student._id));
     if (replied) {
@@ -191,7 +206,7 @@ exports.replySurvey = async (req, res) => {
     }
     survey.responses.push(reply);
 
-    await subject.save()
+    await course.save()
     res.json({
         success: true,
         message: `Reply survey ${survey.name} successfully!`,
@@ -199,15 +214,15 @@ exports.replySurvey = async (req, res) => {
 }
 
 exports.viewResponse = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const { survey } = findSurvey(subject, req);
+    const { survey } = findSurvey(course, req);
 
     const reply = survey.responses.find(value => value.idStudent.equals(req.student._id));
     if (!reply) {
         throw new HttpNotFound(`You have not already reply survey ${survey.name}`)
     }
-    const questionnaire = subject.surveyBank
+    const questionnaire = course.surveyBank
         .find(value => value._id.equals(survey.code)).questions;
 
     res.send({
@@ -222,11 +237,11 @@ exports.viewResponse = async (req, res) => {
 }
 
 exports.viewAllResponse = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const { survey } = findSurvey(subject, req);
+    const { survey } = findSurvey(course, req);
 
-    const questionnaire = subject.surveyBank
+    const questionnaire = course.surveyBank
         .find(value => value._id.equals(survey.code)).questions;
     const result = await Promise.all(questionnaire.map(async (question) => {
         let answer;

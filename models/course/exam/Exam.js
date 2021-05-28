@@ -22,7 +22,7 @@ const questionnaire = new mongoose.Schema({
 const setting = new mongoose.Schema({
     questionnaires: {
         type: [questionnaire],
-        required: [true,],
+        required: [true, ExamValidate.SETTING_QUESTIONNAIRE],
     },
     timeToDo: {
         type: Number,
@@ -73,14 +73,21 @@ exam.pre('save', async function (next) {
     const timeline = currentExam.parent();
     const subject = timeline.parent();
 
-    currentExam.setting.questionnaires.forEach(element => {
-        const questionnaire = subject.quizBank.find(value => value._id.equals(element.id));
+    if (currentExam.isModified('setting')) {
+        currentExam.setting.questionnaires.forEach(element => {
+            const questionnaire = subject.quizBank.find(value => value._id.equals(element.id));
 
-        if (!questionnaire) {
-            const err = new ValidatorError({ message: ExamValidate.NOT_FOUND_QUESTIONNAIRE(element.id) });
-            return next(err);
-        }
-    });
+            if (!questionnaire) {
+                const err = new ValidatorError({ message: ExamValidate.NOT_FOUND_QUESTIONNAIRE(element.id) });
+                return next(err);
+            }
+
+            if(questionnaire.questions.length < element.questionCount){
+                const err = new ValidatorError({ message: ExamValidate.QUESTIONNAIRE_HAS_LOWER_QUESTION(questionnaire) });
+                return next(err);
+            }
+        });
+    }
 
     if (currentExam.isNew) {
         if (!subject.transcript) {

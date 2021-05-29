@@ -64,7 +64,7 @@ const UserSchema = mongoose.Schema({
     },
     urlAvatar: {
         type: String,
-        default: "https://lh3.googleusercontent.com/proxy/pP6SYNTP9OAboWZRDP8tcwvBhXTH19owC_vItvlEtdxiBSTSrbedCDIHSq_fC4vmAK6VrJ7WWttIGYGCTJVX6PCnvUo8HZ6h8xb01-gD5jietUlSL4RKTA"
+        default: "https://www.shareicon.net/data/512x512/2017/01/06/868320_people_512x512.png"
     },
     facebookId: String,
     isNotify: {
@@ -94,7 +94,7 @@ const UserSchema = mongoose.Schema({
 const saltRounds = 10;
 // hash the password before the user is saved
 UserSchema.pre('save', function (next) {
-    var user = this;
+    const user = this;
     // hash the password only if the password has been changed or user is new
     if (!user.isModified('password')) {
         if (!user.isNew) {
@@ -112,7 +112,7 @@ UserSchema.pre('save', function (next) {
 });
 
 UserSchema.methods.comparePassword = function (password) {
-    var user = this;
+    const user = this;
 
     return bcrypt.compareSync(password, user.password);
 };

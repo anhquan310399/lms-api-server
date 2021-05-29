@@ -2,6 +2,10 @@ const mongoose = require("mongoose");
 const { QuestionValidate } = require("../../../constants/ValidationMessage");
 
 const question = new mongoose.Schema({
+    identity: {
+        type: String,
+        required: true,
+    },
     content: {
         type: String,
         required: [true, QuestionValidate.CONTENT]

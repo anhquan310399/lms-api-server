@@ -1,7 +1,8 @@
 const nodemailer = require('nodemailer');
 const smtpTransport = require('nodemailer-smtp-transport');
 const mongoose = require("mongoose");
-const User = mongoose.model("User");
+const schemaTitle = require("../constants/SchemaTitle");
+const User = mongoose.model(schemaTitle.USER);
 const transporter = nodemailer.createTransport(smtpTransport({
     service: 'gmail',
     host: 'smtp.gmail.com',

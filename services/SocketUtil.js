@@ -1,42 +1,29 @@
-const { flatMap } = require("lodash");
 const mongoose = require("mongoose");
-const Subject = mongoose.model("Subject");
+const schemaTitle = require("../constants/SchemaTitle");
+const Course = mongoose.model(schemaTitle.COURSE);
 const { HttpNotFound } = require('../utils/errors');
-const { getDetailComment } = require('../services/DataMapper');
+const { getDetailComment } = require('../services/DataHelpers');
+const { findTopic } = require('../services/FindHelpers');
 
-
-const findTopicThroughSocket = async (idSubject, idTimeline, idForum, idTopic) => {
-    const subject = await Subject.findById(idSubject);
-    if (!subject) {
-        throw new HttpNotFound("Not found subject");
+const findTopicThroughSocket = async (idCourse, idTimeline, idForum, idTopic) => {
+    const course = await Course.findById(idCourse);
+    if (!course) {
+        throw new HttpNotFound("Not found course");
     }
 
-    const timeline = subject.timelines.find(value => value._id.equals(idTimeline));
-    if (!timeline) {
-        throw new HttpNotFound("Not found timeline");
-    }
-
-    const forum = timeline.forums.find(value => value._id.equals(idForum));
-    if (!timeline) {
-        throw new HttpNotFound("Not found forum");
-    }
-
-    const topic = forum.topics.find(value => value._id.equals(idTopic));
-    if (!timeline) {
-        throw new HttpNotFound("Not found topic");
-    }
+    const { topic } = findTopic(course, idTimeline, idForum, idTopic);
 
     return {
-        subject,
+        course,
         topic
     }
 
 }
 
 
-const discussThroughSocket = async (idSubject, idTimeline, idForum, idTopic, message, idUser) => {
+const discussThroughSocket = async (idCourse, idTimeline, idForum, idTopic, message, idUser) => {
     try {
-        const { subject, topic } = await findTopicThroughSocket(idSubject, idTimeline, idForum, idTopic)
+        const { course, topic } = await findTopicThroughSocket(idCourse, idTimeline, idForum, idTopic)
 
         const model = {
             content: message,
@@ -45,7 +32,7 @@ const discussThroughSocket = async (idSubject, idTimeline, idForum, idTopic, mes
 
         const length = topic.discussions.push(model);
 
-        await subject.save();
+        await course.save();
 
         const discussion = await getDetailComment(topic.discussions[length - 1]);
 
@@ -61,16 +48,16 @@ const discussThroughSocket = async (idSubject, idTimeline, idForum, idTopic, mes
     }
 }
 
-const isUserCanJoinRoom = async (idSubject, idUser) => {
-    const subject = await Subject.findOne({
-        _id: idSubject,
+const isUserCanJoinRoom = async (idCourse, idUser) => {
+    const course = await Course.findOne({
+        _id: idCourse,
         $or: [{
             'studentIds': idUser
         }, {
-            idLecture: idUser
+            idTeacher: idUser
         }]
     });
-    if (subject) { return true; }
+    if (course) { return true; }
     else { return false }
 }
 

@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { authInCourse, authTeacherInCourse } = require("../../middlewares/auth")
-const controller = require("../controllers/user/announcementController")
+const controller = require("../../controllers/user/announcementController")
 const { catchErrors } = require("../../handlers/errorHandlers");
 const {  checkSemester } = require('../../middlewares/checkSemester');
 

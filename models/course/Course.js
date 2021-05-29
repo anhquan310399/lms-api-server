@@ -75,6 +75,10 @@ const Schema = mongoose.Schema({
                 });
         }
     },
+    code: {
+        type: String,
+        required: true
+    },
     config: {
         type: config,
         required: [true, CourseValidate.CONFIG]
@@ -94,7 +98,7 @@ const Schema = mongoose.Schema({
                         throw new ValidatorError({
                             message: CourseValidate.NOT_FOUND_TEACHER(id),
                             type: 'validate',
-                            path: 'idLecture'
+                            path: 'idTeacher'
                         })
                     }
                 });

@@ -6,46 +6,46 @@ const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
 const moment = require('moment');
 
-const { getCurrentSemester: getCurrentCourse } = require('../../common/getCurrentSemester');
+const { getCurrentSemester } = require('../../common/getCurrentSemester');
 
 exports.getStatistic = async (req, res) => {
-    const teachers = (await User.find({
+    const teachers = await User.countDocuments({
         idPrivilege: PRIVILEGES.TEACHER
-    }, '')).length
-    const students = (await User.find({
+    })
+    const students = await User.countDocuments({
         idPrivilege: PRIVILEGES.STUDENT
-    }, '')).length
-    const registers = (await User.find({
+    })
+    const registers = await User.countDocuments({
         idPrivilege: PRIVILEGES.REGISTER
-    }, '')).length
+    })
 
     const total = teachers + students + registers;
 
-    const newUsers =
-        (await User.find(
-            {
-                idPrivilege: PRIVILEGES.REGISTER
-            }, DETAILS.STATISTIC)
-            .sort({ createdAt: -1 })
-            .limit(5))
-            .map(user => {
-                var createdAt = moment(user.createdAt).format('DD MMMM HH:mm');
-                return {
-                    _id: user._id,
-                    fullName: user.firstName + " " + user.lastName,
-                    emailAddress: user.emailAddress,
-                    urlAvatar: user.urlAvatar,
-                    status: user.status,
-                    createdAt
-                };
-            });
-    const currentCourse = await getCurrentCourse();
+    const newUsers = (await User.find(
+        {
+            idPrivilege: PRIVILEGES.REGISTER
+        }, DETAILS.STATISTIC)
+        .sort({ createdAt: -1 })
+        .limit(5))
+        .map(user => {
+            var createdAt = moment(user.createdAt).format('DD MMMM HH:mm');
+            return {
+                _id: user._id,
+                fullName: user.firstName + " " + user.lastName,
+                emailAddress: user.emailAddress,
+                urlAvatar: user.urlAvatar,
+                status: user.status,
+                createdAt
+            };
+        });
+    const currentSemester = await getCurrentSemester();
+
     const publicSubjects = (await Course.find({
-        idCourse: currentCourse._id,
+        idSemester: currentSemester._id,
         'config.role': 'public'
     })).length;
     const privateSubjects = (await Course.find({
-        idCourse: currentCourse._id,
+        idSemester: currentSemester._id,
         'config.role': 'private'
     })).length;
 

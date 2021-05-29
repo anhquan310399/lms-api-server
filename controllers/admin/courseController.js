@@ -1,26 +1,49 @@
 const mongoose = require("mongoose");
 const schemaTitle = require("../../constants/SchemaTitle");
 const Course = mongoose.model(schemaTitle.COURSE);
+const Subject = mongoose.model(schemaTitle.SUBJECT);
+const Classes = mongoose.model(schemaTitle.CLASS);
 const { HttpNotFound } = require('../../utils/errors');
-const { getConfigInfoOfCourse } = require('../../services/DataMapper');
+const { getConfigInfoOfCourse } = require('../../services/DataHelpers');
 const _ = require('lodash');
 
 const { AdminResponseMessages } = require('../../constants/ResponseMessages');
 const { CourseResponseMessages } = AdminResponseMessages;
 
 const findCourseById = async (id) => {
-    const course = await Course.findById(req.params.id);
+    const course = await Course.findById(id);
     if (!course) {
-        throw new HttpNotFound(CourseResponseMessages.NOT_FOUND(req.params.id));
+        throw new HttpNotFound(CourseResponseMessages.NOT_FOUND(id));
     }
+    return course;
 }
 
+const { getCodeOfNewCourse } = require("../../common/getCodeOfNewCourse");
+
 exports.create = async (req, res) => {
+
+    const subject = await Subject.findById(req.body.idSubject);
+
+    if (!subject) {
+        throw new HttpNotFound(CourseResponseMessages.NOT_FOUND_SUBJECT(req.body.idSubject));
+    }
+
+    const courseClass = await Classes.findById(req.body.idClass);
+
+    if (!courseClass) {
+        throw new HttpNotFound(CourseResponseMessages.NOT_FOUND_CLASS(req.body.idClass));
+    }
+
+    const { code, name } = await getCodeOfNewCourse(subject);
+
     const course = new Course({
-        name: req.body.name,
+        name: name,
+        code: code,
         idSemester: req.body.idSemester,
         config: req.body.config,
-        idLecture: req.body.idLecture,
+        idTeacher: req.body.idTeacher,
+        idSubject: subject._id,
+        studentIds: courseClass.students
     });
 
     await course.save();
@@ -87,7 +110,7 @@ exports.update = async (req, res) => {
     course.name = req.body.name || course.name;
     course.config = req.body.config || course.config;
     course.idCourse = req.body.idCourse || course.idCourse;
-    course.idLecture = req.body.idLecture || course.idLecture;
+    course.idTeacher = req.body.idTeacher || course.idTeacher;
 
     await course.save();
 

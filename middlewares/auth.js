@@ -35,11 +35,11 @@ exports.authStudentInCourse = (req, res, next) => {
                 }
             })
             .catch((err) => {
-                console.log("authStudentInCourse", err);
+                console.log("authStudentInCourse", err).message;
                 next(err);
             });
     } catch (error) {
-        console.log("authStudentInCourse", error);
+        console.log("authStudentInCourse", error.message);
         next(new HttpUnauthorized());
     };
 }
@@ -70,11 +70,11 @@ exports.authTeacherInCourse = (req, res, next) => {
                 }
             })
             .catch((err) => {
-                console.log("authTeacherInCourse", err);
+                console.log("authTeacherInCourse", err.message);
                 next(err);
             });
     } catch (error) {
-        console.log("authTeacherInCourse", error);
+        console.log("authTeacherInCourse", error.message);
         next(new HttpUnauthorized());
     }
 }
@@ -115,11 +115,11 @@ exports.authInCourse = (req, res, next) => {
                 }
             })
             .catch((err) => {
-                console.log("authInCourse", err);
+                console.log("authInCourse", err.message);
                 next(err);
             });
     } catch (error) {
-        console.log("authInCourse", error);
+        console.log("authInCourse", error.message);
         next(new HttpUnauthorized());
     }
 }
@@ -142,16 +142,16 @@ exports.authStudent = (req, res, next) => {
                 next();
             })
             .catch((err) => {
-                console.log("authStudent", err);
+                console.log("authStudent", err.message);
                 next(err);
             });
     } catch (error) {
-        console.log("authStudent", error);
+        console.log("authStudent", error.message);
         next(new HttpUnauthorized());
     };
 }
 
-exports.authLecture = (req, res, next) => {
+exports.authTeacher = (req, res, next) => {
     try {
         const token = req.header('Authorization').replace('Bearer ', '')
         const data = jwt.verify(token, process.env.JWT_KEY)
@@ -165,15 +165,14 @@ exports.authLecture = (req, res, next) => {
                     next(new HttpUnauthorized());
                 }
                 req.teacher = user;
-                req.user = user;
                 next();
             })
             .catch((err) => {
-                console.log("authLecture", err);
+                console.log("authLecture", err.message);
                 next(err);
             });
     } catch (error) {
-        console.log("authLecture", error);
+        console.log("authTeacher", error.message);
         next(new HttpUnauthorized());
     }
 }
@@ -194,11 +193,11 @@ exports.authLogin = (req, res, next) => {
                 next();
             })
             .catch((err) => {
-                console.log("authLogin", err);
+                console.log("authLogin", err.message);
                 next(err);
             });
     } catch (error) {
-        console.log("authLogin", error);
+        console.log("authLogin", error.message);
         next(new HttpUnauthorized());
     }
 }
@@ -222,11 +221,11 @@ exports.authUser = (req, res, next) => {
                 next();
             })
             .catch((err) => {
-                console.log("authUser", err);
+                console.log("authUser", err.message);
                 next(err);
             });
     } catch (error) {
-        console.log("authUser", error);
+        console.log("authUser", error.message);
         next(new HttpUnauthorized());
     }
 }
@@ -248,11 +247,11 @@ exports.authAdmin = (req, res, next) => {
                 next();
             })
             .catch((err) => {
-                console.log("authAdmin", err);
+                console.log("authAdmin", err.message);
                 next(err);
             });
     } catch (error) {
-        console.log("authAdmin", error);
+        console.log("authAdmin", error.message);
         next(new HttpUnauthorized());
     }
 }

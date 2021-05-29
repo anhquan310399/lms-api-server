@@ -3,8 +3,8 @@ const mongoose = require("mongoose");
 const announcementSchema = require("./Announcement");
 const forumSchema = require("./Forum");
 const assignmentSchema = require("./Assignment");
-const examSchema = require("./Exam");
-const surveySchema = require("./Survey");
+const examSchema = require("./exam/Exam");
+const surveySchema = require("./survey/Survey");
 const fileSchema = require("./File");
 const { TimelineValidate } = require("../../constants/ValidationMessage");
 

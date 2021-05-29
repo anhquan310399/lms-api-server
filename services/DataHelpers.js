@@ -4,6 +4,7 @@ const schemaTitle = require("../constants/SchemaTitle");
 const mongoose = require("mongoose");
 const User = mongoose.model(schemaTitle.USER);
 const Course = mongoose.model(schemaTitle.COURSE);
+const Semester = mongoose.model(schemaTitle.SEMESTER);
 const DETAILS = require('../constants/AccountDetail');
 const moment = require('moment');
 
@@ -20,12 +21,13 @@ const getCommonInfo = (object, isStudent) => {
 }
 
 const getConfigInfoOfCourse = async (course) => {
-    const teacher = await User.findById(course.idLecture, DETAILS.COMMON);
-    const semester = await Course.findById(course.idSemester, "name");
+    const teacher = await User.findById(course.idTeacher, DETAILS.COMMON);
+    const semester = await Semester.findById(course.idSemester, "name");
     return {
         _id: course._id,
         name: course.name,
-        lecture: teacher,
+        code: course.code,
+        teacher,
         semester,
         studentCount: course.studentIds.length,
         idSemester: course.idSemester,

@@ -10,6 +10,6 @@ router.get('/:id', authInCourse, catchErrors(controller.find));
 router.get('/:id/update', authTeacherInCourse, catchErrors(controller.findUpdate));
 router.put('/:id', authTeacherInCourse, catchErrors(controller.update));
 router.put('/:id/hide', authTeacherInCourse, catchErrors(controller.lock));
-router.delete('/:id/', authTeacherInCourse, catchErrors(forumController.delete));
+router.delete('/:id/', authTeacherInCourse, catchErrors(controller.delete));
 
 module.exports = router;

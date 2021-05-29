@@ -1,5 +1,6 @@
 const questions = [
     {
+        "identity": "0",
         "question": "Mức độ của nội dung video, slide, tài liệu tham khảo của giáo viên cung cấp?",
         "typeQuestion": "choice",
         "answer": [
@@ -7,6 +8,7 @@ const questions = [
         ]
     },
     {
+        "identity": "1",
         "question": "SV đã đọc trước slide bài giảng/ bài tập/ bài LAB ở mức nào trước buổi học online",
         "typeQuestion": "choice",
         "answer": [
@@ -14,6 +16,7 @@ const questions = [
         ]
     },
     {
+        "identity": "2",
         "question": "Nội dung trong buổi học online, SV muốn GV cần tập trung gì? (chọn 2)",
         "typeQuestion": "multiple",
         "answer": [
@@ -25,6 +28,7 @@ const questions = [
     }
     ,
     {
+        "identity": "3",
         "question": "Bạn có đề xuất gì để việc giảng dạy online được tốt hơn? ",
         "typeQuestion": "fill"
     }

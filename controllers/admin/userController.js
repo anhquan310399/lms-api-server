@@ -6,7 +6,7 @@ const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
 const STATUS = require('../../constants/AccountStatus');
 
-const { getConfigInfoOfUser } = require('../../services/DataMapper');
+const { getConfigInfoOfUser } = require('../../services/DataHelpers');
 
 const { AdminResponseMessages } = require('../../constants/ResponseMessages');
 const { UserResponseMessages } = AdminResponseMessages;

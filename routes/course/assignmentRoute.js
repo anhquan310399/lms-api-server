@@ -12,7 +12,7 @@ router.post('/:id/submit', authStudentInCourse, checkSemester, catchErrors(contr
 router.post('/:id/grade/:idSubmission', authTeacherInCourse, catchErrors(controller.gradeSubmission));
 router.post('/:id/comment/:idSubmission', authInCourse, checkSemester, catchErrors(controller.commentFeedback));
 router.put('/:id', authTeacherInCourse, catchErrors(controller.update));
-router.delete('/:id', authLectureInSubject, catchErrors(controller.delete));
+router.delete('/:id', authTeacherInCourse, catchErrors(controller.delete));
 router.put('/:id/hide', authTeacherInCourse, catchErrors(controller.lock));
 
 module.exports = router;

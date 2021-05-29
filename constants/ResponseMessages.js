@@ -45,6 +45,12 @@ const AdminResponseMessages = {
         },
         LOCK_MESSAGE({ isDeleted: status, name }) {
             return `${status ? 'Lock' : 'Unlock'} course '${name}' successfully!`
+        },
+        NOT_FOUND_CLASS(id) {
+            return `Not found class with id - ${id}`
+        },
+        NOT_FOUND_SUBJECT(id) {
+            return `Not found subject with id - ${id}`
         }
     },
     UserResponseMessages: {
@@ -57,6 +63,35 @@ const AdminResponseMessages = {
         LOCK_MESSAGE({ status, lastName, firstName, role }) {
             return `${status === STATUS.SUSPENDED ? 'Lock' : 'Unlock'} ${role} '${firstName + ' ' + lastName}' successfully!`
         }
+    },
+    CurriculumResponseMessages: {
+        CREATE_SUCCESS: 'Create new curriculum successfully!',
+        NOT_FOUND(id) {
+            return `Not found curriculum with id - ${id}`
+        },
+        UPDATE_SUCCESS: 'Update curriculum successfully!',
+        DELETE_SUCCESS: 'Delete curriculum successfully!',
+    },
+    SubjectResponseMessages: {
+        CREATE_SUCCESS: 'Create new subject successfully!',
+        NOT_FOUND(id) {
+            return `Not found subject with id - ${id}`
+        },
+        UPDATE_SUCCESS: 'Update subject successfully!',
+        DELETE_SUCCESS: 'Delete subject successfully!',
+        LOCK_MESSAGE({ isDeleted: status, name }) {
+            return `${status ? 'Lock' : 'Unlock'} subject '${name}' successfully!`
+        }
+    },
+    ClassResponseMessages: {
+        CREATE_SUCCESS: 'Create new class successfully!',
+        NOT_FOUND(id) {
+            return `Not found class with id - ${id}`
+        },
+        UPDATE_SUCCESS: 'Update class successfully!',
+        DELETE_SUCCESS: 'Delete class successfully!',
+        ADD_STUDENTS_SUCCESS: 'Add student successfully!',
+
     }
 }
 
@@ -198,6 +233,20 @@ const ClientResponsesMessages = {
     },
     SurveyResponseMessages: {
         CREATE_SUCCESS: 'Create new survey successfully',
+        UPDATE_SUCCESS: 'Update this survey successfully',
+        LOCK_MESSAGE({ isDeleted: status, name }) {
+            return `${status ? 'Hide' : 'Show'} survey ${name} successfully!`;
+        },
+        DELETE_SUCCESS: 'Delete this survey successfully',
+        SURVEY_ALREADY_REPLIED: `You have already replied this survey`,
+        REPLY_SURVEY_SUCCESS: `Reply survey successfully!`,
+        SURVEY_NOT_REPLIED: `You have not already replied this survey`
+    },
+    QuizBankResponseMessages: {
+        NOT_FOUND_CHAPTER: 'Not found questionnaire',
+        UPDATE_CHAPTER_SUCCESS: 'Update chapter successfully!',
+        DELETE_CHAPTER_SUCCESS: 'Delete this chapter successfully',
+
     }
 }
 

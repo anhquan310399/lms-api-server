@@ -127,7 +127,7 @@ exports.updatePassword = async (req, res) => {
 };
 
 exports.authenticate = async (req, res) => {
-    const user = await User.findOne({ code: req.body.code }, DETAILS.DETAIL);
+    const user = await User.findOne({ code: req.body.code });
     if (!user) {
         throw new HttpNotFound(UserResponseMessages.AUTHENTICATE_NOT_FOUND);
     }
@@ -147,7 +147,7 @@ exports.authenticate = async (req, res) => {
     res.json({
         success: true,
         message: UserResponseMessages.AUTHENTICATE_SUCCESS,
-        user,
+        user: await User.findById(user._id, DETAILS.DETAIL),
         type: 'authenticate',
         token: token
     });

@@ -22,12 +22,11 @@ require("./models/User");
 require("./models/ChatRoom");
 require("./models/Message");
 require("./models/Semester");
-require("./models/course/Course");
 require("./models/curriculum/Class");
 require("./models/curriculum/Subject");
 require("./models/curriculum/Curriculum");
 require("./models/Faculty");
-// require("./models/Subject");
+require("./models/course/Course");
 
 const app = require("./app");
 
@@ -38,9 +37,11 @@ const server = app.listen(process.env.PORT || '8000', () => {
 const io = require("socket.io")(server, { cors: { origin: '*' } });
 const jwt = require("jsonwebtoken");
 
-const Message = mongoose.model("Message");
-const User = mongoose.model("User");
-const { getDetailMessage, getUserById } = require('./services/DataMapper');
+const schemaTitle = require("./constants/SchemaTitle");
+
+const Message = mongoose.model(schemaTitle.MESSAGES);
+const User = mongoose.model(schemaTitle.USER);
+const { getDetailMessage, getUserById } = require('./services/DataHelpers');
 const { discussThroughSocket, isUserCanJoinRoom } = require('./services/SocketUtil');
 
 io.use((socket, next) => {

@@ -1,9 +1,12 @@
 const mongoose = require("mongoose");
 const schemaTitle = require("../../constants/SchemaTitle");
 const Curriculum = mongoose.model(schemaTitle.CURRICULUM);
+const Faculty = mongoose.model(schemaTitle.FACULTY);
+const Subject = mongoose.model(schemaTitle.SUBJECT);
 const { HttpNotFound } = require('../../utils/errors');
 const { AdminResponseMessages } = require('../../constants/ResponseMessages');
 const { CurriculumResponseMessages } = AdminResponseMessages;
+const _ = require('lodash');
 
 const findCurriculumById = async (id) => {
     const curriculum = await Curriculum.findById(id);
@@ -13,21 +16,53 @@ const findCurriculumById = async (id) => {
     return curriculum;
 }
 
+const getInfoCurriculum = async (curriculum) => {
+    const faculty = await Faculty.findById(curriculum.idFaculty, 'name');
+    return { ...curriculum['_doc'], faculty };
+}
+
+const getSubjectsOfCurriculum = async (curriculum) => {
+    let subjects = await Promise.all(curriculum.subjects.map(async (idSubject) => {
+        return Subject.findById(idSubject, 'name code credit');
+    }))
+
+    subjects = _.sortBy(subjects, 'name');
+
+    return subjects;
+}
+
 exports.create = async (req, res) => {
     const data = new Curriculum({
         name: req.body.name,
         code: req.body.code,
-        subjects: req.body.subjects,
-        classes: req.body.classes
+        idFaculty: req.body.idFaculty
     });
 
     const curriculum = await data.save();
 
     res.json({
         message: CurriculumResponseMessages.CREATE_SUCCESS,
-        curriculum
+        curriculum: await getInfoCurriculum(curriculum)
     });
 };
+
+exports.getAllSubjects = async (req, res) => {
+    const curriculum = await findCurriculumById(req.params.id);
+
+    const subjects = await getSubjectsOfCurriculum(curriculum);
+
+    const others = await Subject.find({
+        _id: {
+            $nin: curriculum.subjects
+        }
+    }, 'name')
+
+    res.json({
+        success: true,
+        subjects,
+        others
+    })
+}
 
 exports.filter = async (req, res) => {
     const page = parseInt(req.body.page);
@@ -35,8 +70,12 @@ exports.filter = async (req, res) => {
     const name = req.body.name || "";
 
     const filteredCurriculums = await Curriculum.find({
-        name: { $regex: new RegExp(name.toLowerCase(), "i") },
-    }).skip((page - 1) * size).limit(size);
+        name: { $regex: new RegExp(name.toLowerCase(), "i") }
+    }, 'name code idFaculty').skip((page - 1) * size).limit(size);
+
+    const curriculums = await Promise.all(filteredCurriculums.map(async (curriculum) => {
+        return getInfoCurriculum(curriculum);
+    }));
 
     const total = await Curriculum.countDocuments({
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
@@ -44,7 +83,7 @@ exports.filter = async (req, res) => {
 
     res.json({
         success: true,
-        curriculums: filteredCurriculums,
+        curriculums: curriculums,
         total
     });
 }
@@ -60,20 +99,59 @@ exports.update = async (req, res) => {
 
     curriculum.code = req.body.code;
     curriculum.name = req.body.name;
-    curriculum.subjects = req.body.subjects;
-    curriculum.classes = req.body.classes;
-
-    curriculum.subjects = curriculum.subjects.filter((a, b) => curriculum.subjects.indexOf(a) === b);
-
-    curriculum.classes = curriculum.classes.filter((a, b) => curriculum.classes.indexOf(a) === b);
+    curriculum.idFaculty = req.body.idFaculty;
 
     await curriculum.save();
 
     res.json({
         message: CurriculumResponseMessages.UPDATE_SUCCESS,
-        curriculum
+        curriculum: await getInfoCurriculum(curriculum)
     });
 };
+
+exports.addSubjects = async (req, res) => {
+    const curriculum = await findCurriculumById(req.params.id);
+
+    curriculum.subjects = curriculum.subjects.concat(req.body.subjects);
+
+    curriculum.subjects = curriculum.subjects.filter((a, b) => curriculum.subjects.indexOf(a) === b);
+
+    const others = await Subject.find({
+        _id: {
+            $nin: curriculum.subjects
+        }
+    }, 'name')
+
+    await curriculum.save();
+
+    res.json({
+        message: CurriculumResponseMessages.UPDATE_SUCCESS,
+        subjects: await getSubjectsOfCurriculum(curriculum),
+        others
+    });
+}
+
+exports.updateSubjects = async (req, res) => {
+    const curriculum = await findCurriculumById(req.params.id);
+
+    curriculum.subjects = req.body.subjects;
+
+    curriculum.subjects = curriculum.subjects.filter((a, b) => curriculum.subjects.indexOf(a) === b);
+
+    const others = await Subject.find({
+        _id: {
+            $nin: curriculum.subjects
+        }
+    }, 'name')
+
+    await curriculum.save();
+
+    res.json({
+        message: CurriculumResponseMessages.UPDATE_SUCCESS,
+        subjects: await getSubjectsOfCurriculum(curriculum),
+        others
+    });
+}
 
 exports.delete = async (req, res) => {
 

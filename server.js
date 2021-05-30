@@ -22,10 +22,10 @@ require("./models/User");
 require("./models/ChatRoom");
 require("./models/Message");
 require("./models/Semester");
-require("./models/curriculum/Class");
+require("./models/Faculty");
 require("./models/curriculum/Subject");
 require("./models/curriculum/Curriculum");
-require("./models/Faculty");
+require("./models/curriculum/Class");
 require("./models/course/Course");
 
 const app = require("./app");

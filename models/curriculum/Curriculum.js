@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const schemaTitle = require("../../constants/SchemaTitle");
 const { CurriculumValidate } = require("../../constants/ValidationMessage");
 const Subject = mongoose.model(schemaTitle.SUBJECT);
-const Class = mongoose.model(schemaTitle.CLASS);
+const Faculty = mongoose.model(schemaTitle.FACULTY);
 var ValidatorError = mongoose.Error.ValidatorError;
 
 const Schema = mongoose.Schema({
@@ -13,6 +13,23 @@ const Schema = mongoose.Schema({
     code: {
         type: String,
         required: [true, CurriculumValidate.CODE]
+    },
+    idFaculty: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: schemaTitle.FACULTY,
+        required: [true, CurriculumValidate.ID_FACULTY],
+        validate: function (id) {
+            Faculty.findById(id)
+                .then(faculty => {
+                    if (!faculty) {
+                        throw new ValidatorError({
+                            message: CurriculumValidate.NOT_FOUND_FACULTY(id),
+                            type: 'validate',
+                            path: 'Curriculum.idFaculty'
+                        })
+                    }
+                });
+        }
     },
     subjects: {
         type: [mongoose.Types.ObjectId],
@@ -31,25 +48,7 @@ const Schema = mongoose.Schema({
                 return id;
             }));
         }
-    },
-    classes: {
-        type: [mongoose.Types.ObjectId],
-        default: [],
-        ref: schemaTitle.CLASS,
-        validate: async function (list) {
-            await Promise.all(list.map(async (id) => {
-                const temp = await Class.findById(id);
-                if (!temp) {
-                    throw new ValidatorError({
-                        message: CurriculumValidate.NOT_FOUND_CLASS(id),
-                        type: 'validate',
-                        path: 'curriculum.classes'
-                    })
-                }
-                return id;
-            }));
-        }
-    },
+    }
 }, {
     timestamps: true
 });

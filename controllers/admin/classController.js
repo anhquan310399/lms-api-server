@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const schemaTitle = require("../../constants/SchemaTitle");
 const Classes = mongoose.model(schemaTitle.CLASS);
 const User = mongoose.model(schemaTitle.USER);
+const Curriculum = mongoose.model(schemaTitle.CURRICULUM);
 const { HttpNotFound } = require('../../utils/errors');
 const { AdminResponseMessages } = require('../../constants/ResponseMessages');
 const { ClassResponseMessages } = AdminResponseMessages;
@@ -17,22 +18,29 @@ const findClassById = async (id) => {
     return cls;
 }
 
+const getInfoClass = async (cls) => {
+    const curriculum = await Curriculum.findById(cls.idCurriculum, 'name');
+    return { ...cls['_doc'], curriculum };
+}
+
+
 exports.create = async (req, res) => {
     const data = new Classes({
         name: req.body.name,
         code: req.body.code,
+        idCurriculum: req.body.idCurriculum
     });
 
     const cls = await data.save();
 
     res.json({
         message: ClassResponseMessages.CREATE_SUCCESS,
-        class: cls
+        class: await getInfoClass(cls)
     });
 };
 
 exports.findAll = async (req, res) => {
-    const classes = await Classes.find();
+    const classes = await Classes.find({}, 'name');
     res.json({ classes });
 };
 
@@ -41,9 +49,13 @@ exports.filter = async (req, res) => {
     const size = parseInt(req.body.pageSize);
     const name = req.body.name || "";
 
-    const classes = await Classes.find({
+    const filteredClasses = await Classes.find({
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
     }).skip((page - 1) * size).limit(size);
+
+    const classes = await Promise.all(filteredClasses.map(async (cls) => {
+        return getInfoClass(cls);
+    }));
 
     const total = await Classes.countDocuments({
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
@@ -57,16 +69,17 @@ exports.filter = async (req, res) => {
 
 exports.update = async (req, res) => {
 
-    const classroom = await findClassById(req.params.id);
+    const cls = await findClassById(req.params.id);
 
-    classroom.code = req.body.code;
-    classroom.name = req.body.name;
+    cls.code = req.body.code;
+    cls.name = req.body.name;
+    cls.idCurriculum = req.body.idCurriculum;
 
-    await classroom.save();
+    await cls.save();
 
     res.json({
         message: ClassResponseMessages.UPDATE_SUCCESS,
-        classroom
+        class: await getInfoClass(cls)
     });
 };
 
@@ -83,13 +96,13 @@ exports.delete = async (req, res) => {
 
 exports.addStudents = async (req, res) => {
 
-    const classroom = await findClassById(req.params.id);
+    const cls = await findClassById(req.params.id);
 
-    const students = req.body.students;
+    const data = req.body.students;
 
-    let ids = await Promise.all(students.map(async (student) => {
-        console.log(student);
-        const exist = await User.findOne({
+    let ids = await Promise.all(data.map(async(student) => {
+
+        let exist = await User.findOne({
             $or: [
                 { code: student.code }, { emailAddress: student.emailAddress }
             ]
@@ -110,24 +123,54 @@ exports.addStudents = async (req, res) => {
         return exist._id;
     }));
 
-    ids = classroom.students.concat(ids);
+    ids = cls.students.concat(ids);
 
     ids = ids.filter((a, b) => ids.indexOf(a) === b);
 
-    classroom.students = ids;
+    cls.students = ids;
 
-    await classroom.save();
+    await cls.save();
+
+    const students = await Promise.all(cls.students.map(async (studentId) => {
+        return User.findById(studentId,
+            DETAILS.CONFIG_ADMIN);
+    }));
 
     res.json({
-        message: ClassResponseMessages.ADD_STUDENTS_SUCCESS
+        message: ClassResponseMessages.ADD_STUDENTS_SUCCESS,
+        students: students
     })
 };
 
+exports.updateStudents = async (req, res) => {
+    const cls = await findClassById(req.params.id);
+
+    const data = req.body.students;
+
+    data = data.filter((a, b) => data.indexOf(a) === b);
+
+    cls.students = data;
+
+    await cls.save();
+
+    const students = await Promise.all(cls.students.map(async (studentId) => {
+        return User.findById(studentId,
+            DETAILS.CONFIG_ADMIN);
+    }));
+
+
+    res.json({
+        success: true,
+        students,
+        message: ClassResponseMessages.ADD_STUDENTS_SUCCESS,
+    })
+}
+
 exports.getAllStudents = async (req, res) => {
 
-    const classroom = await findClassById(req.params.id);
+    const cls = await findClassById(req.params.id);
 
-    const students = await Promise.all(classroom.students.map(async (studentId) => {
+    const students = await Promise.all(cls.students.map(async (studentId) => {
         return User.findById(studentId,
             DETAILS.CONFIG_ADMIN);
     }));

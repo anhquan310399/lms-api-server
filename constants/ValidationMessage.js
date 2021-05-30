@@ -17,9 +17,10 @@ const CurriculumValidate = {
     NOT_FOUND_SUBJECT(idSubject) {
         return `Not found subject with _id: ${idSubject}`
     },
-    NOT_FOUND_CLASS(idClass) {
-        return `Not found class with _id: ${idClass}`
-    }
+    NOT_FOUND_FACULTY(idFaculty) {
+        return `Not found faculty with _id: ${idFaculty}`
+    },
+    ID_FACULTY: 'Faculty of curriculum is required'
 }
 
 const SubjectValidate = {

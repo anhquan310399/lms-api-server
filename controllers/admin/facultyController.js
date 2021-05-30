@@ -17,7 +17,6 @@ exports.create = async (req, res) => {
     const data = new Faculty({
         name: req.body.name,
         code: req.body.code,
-        curriculums: req.body.curriculums,
     });
 
     const faculty = await data.save();
@@ -29,7 +28,7 @@ exports.create = async (req, res) => {
 };
 
 exports.findAll = async (req, res) => {
-    const faculties = await Faculty.find();
+    const faculties = await Faculty.find({},'name');
     res.json({ faculties });
 };
 
@@ -59,7 +58,6 @@ exports.update = async (req, res) => {
 
     faculty.code = req.body.code;
     faculty.name = req.body.name;
-    faculty.curriculums = req.body.curriculums;
 
     await faculty.save();
 

@@ -29,6 +29,7 @@ router.delete("/curriculum/:id", authAdmin, catchErrors(curriculumCTL.delete));
  * Route for subject controller
  */
 
+router.post("/subject/filter", authAdmin, catchErrors(subjectCTL.filter));
 router.post("/subject", authAdmin, catchErrors(subjectCTL.create));
 router.get("/subject", authAdmin, catchErrors(subjectCTL.findAll));
 router.put("/subject/:id", authAdmin, catchErrors(subjectCTL.update));
@@ -39,6 +40,7 @@ router.put("/subject/:id/lock", authAdmin, catchErrors(subjectCTL.lock));
  * Route for class controller
  */
 
+router.post("/class/filter", authAdmin, catchErrors(classCTL.filter));
 router.post("/class", authAdmin, catchErrors(classCTL.create));
 router.get("/class/:id/students", authAdmin, catchErrors(classCTL.getAllStudents));
 router.post("/class/:id/students", authAdmin, catchErrors(classCTL.addStudents));

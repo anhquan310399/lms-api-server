@@ -38,9 +38,14 @@ exports.filter = async (req, res) => {
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
     }).skip((page - 1) * size).limit(size);
 
+    const total = await Curriculum.countDocuments({
+        name: { $regex: new RegExp(name.toLowerCase(), "i") },
+    })
+
     res.json({
         success: true,
-        curriculums: filteredCurriculums
+        curriculums: filteredCurriculums,
+        total
     });
 }
 

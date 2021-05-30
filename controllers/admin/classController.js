@@ -10,11 +10,11 @@ const STATUS = require('../../constants/AccountStatus');
 const DETAILS = require('../../constants/AccountDetail');
 
 const findClassById = async (id) => {
-    const classroom = await Classes.findById(id);
-    if (!classroom) {
+    const cls = await Classes.findById(id);
+    if (!cls) {
         throw new HttpNotFound(ClassResponseMessages.NOT_FOUND(id))
     }
-    return classroom;
+    return cls;
 }
 
 exports.create = async (req, res) => {
@@ -23,17 +23,36 @@ exports.create = async (req, res) => {
         code: req.body.code,
     });
 
-    const classroom = await data.save();
+    const cls = await data.save();
 
     res.json({
         message: ClassResponseMessages.CREATE_SUCCESS,
-        classroom
+        class: cls
     });
 };
 
 exports.findAll = async (req, res) => {
     const classes = await Classes.find();
     res.json({ classes });
+};
+
+exports.filter = async (req, res) => {
+    const page = parseInt(req.body.page);
+    const size = parseInt(req.body.pageSize);
+    const name = req.body.name || "";
+
+    const classes = await Classes.find({
+        name: { $regex: new RegExp(name.toLowerCase(), "i") },
+    }).skip((page - 1) * size).limit(size);
+
+    const total = await Classes.countDocuments({
+        name: { $regex: new RegExp(name.toLowerCase(), "i") },
+    })
+    res.json({
+        success: true,
+        classes: classes,
+        total
+    });
 };
 
 exports.update = async (req, res) => {

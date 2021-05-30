@@ -60,9 +60,14 @@ exports.filter = async (req, res) => {
         getBasicInfoSemester(course)
     ));
 
+    const total = await Semester.countDocuments({
+        name: { $regex: new RegExp(name.toLowerCase(), "i") },
+    })
+
     res.json({
         success: true,
-        semesters: semesters
+        semesters: semesters,
+        total
     });
 }
 

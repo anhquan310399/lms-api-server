@@ -17,7 +17,11 @@ const Schema = mongoose.Schema({
         type: [Number, SubjectValidate.TYPE_CREDIT],
         min: [1, SubjectValidate.MIN_CREDIT],
         default: 1
-    }
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
 }, {
     timestamps: true
 });

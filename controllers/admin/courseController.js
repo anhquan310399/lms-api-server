@@ -42,7 +42,7 @@ exports.create = async (req, res) => {
         idSemester: req.body.idSemester,
         config: req.body.config,
         idTeacher: req.body.idTeacher,
-        idSubject: subject._id,
+        idSubject: course._id,
         studentIds: courseClass.students
     });
 
@@ -50,7 +50,7 @@ exports.create = async (req, res) => {
 
     res.json({
         success: true,
-        subject: await getConfigInfoOfCourse(course),
+        course: await getConfigInfoOfCourse(course),
         message: CourseResponseMessages.CREATE_SUCCESS(course.name)
     });
 };
@@ -64,7 +64,7 @@ exports.findAll = async (req, res) => {
 
     res.json({
         success: true,
-        allCourses: configData
+        courses: configData
     });
 };
 
@@ -100,7 +100,7 @@ exports.find = async (req, res) => {
 
     res.json({
         success: true,
-        subject: await getConfigInfoOfCourse(course)
+        course: await getConfigInfoOfCourse(course)
     });
 }
 
@@ -117,7 +117,7 @@ exports.update = async (req, res) => {
     res.json({
         success: true,
         message: CourseResponseMessages.UPDATE_SUCCESS,
-        subject: await getConfigInfoOfCourse(course)
+        course: await getConfigInfoOfCourse(course)
     });
 };
 
@@ -143,6 +143,6 @@ exports.lock = async (req, res) => {
     res.json({
         success: true,
         message: CourseResponseMessages.LOCK_MESSAGE(course),
-        subject: await getConfigInfoOfCourse(course)
+        course: await getConfigInfoOfCourse(course)
     });
 };

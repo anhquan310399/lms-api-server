@@ -42,9 +42,14 @@ exports.filter = async (req, res) => {
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
     }).skip((page - 1) * size).limit(size);
 
+    const total = await Faculty.countDocuments({
+        name: { $regex: new RegExp(name.toLowerCase(), "i") }
+    })
+
     res.json({
         success: true,
-        faculties: filteredFaculties
+        faculties: filteredFaculties,
+        total
     });
 }
 

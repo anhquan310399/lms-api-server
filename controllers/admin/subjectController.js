@@ -28,6 +28,21 @@ exports.create = async (req, res) => {
     });
 };
 
+exports.filter = async (req, res) => {
+    const page = parseInt(req.body.page);
+    const size = parseInt(req.body.pageSize);
+    const name = req.body.name || "";
+
+    const subjects = await Subject.find({
+        name: { $regex: new RegExp(name.toLowerCase(), "i") },
+    }).skip((page - 1) * size).limit(size);
+
+    res.json({
+        success: true,
+        subjects: subjects
+    });
+}
+
 exports.findAll = async (req, res) => {
     const subjects = await Subject.find();
     res.json({ subjects });

@@ -145,7 +145,7 @@ exports.addStudents = async (req, res) => {
 exports.updateStudents = async (req, res) => {
     const cls = await findClassById(req.params.id);
 
-    const data = req.body.students;
+    let data = req.body.students;
 
     data = data.filter((a, b) => data.indexOf(a) === b);
 
@@ -162,7 +162,7 @@ exports.updateStudents = async (req, res) => {
     res.json({
         success: true,
         students,
-        message: ClassResponseMessages.ADD_STUDENTS_SUCCESS,
+        message: ClassResponseMessages.UPDATE_STUDENTS_SUCCESS,
     })
 }
 

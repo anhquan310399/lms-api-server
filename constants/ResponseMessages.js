@@ -90,8 +90,8 @@ const AdminResponseMessages = {
         },
         UPDATE_SUCCESS: 'Update class successfully!',
         DELETE_SUCCESS: 'Delete class successfully!',
-        ADD_STUDENTS_SUCCESS: 'Add student successfully!',
-
+        ADD_STUDENTS_SUCCESS: 'Add students to class successfully!',
+        UPDATE_STUDENTS_SUCCESS: 'Update students of class successfully!'
     }
 }
 

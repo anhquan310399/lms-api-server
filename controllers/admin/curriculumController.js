@@ -3,6 +3,8 @@ const schemaTitle = require("../../constants/SchemaTitle");
 const Curriculum = mongoose.model(schemaTitle.CURRICULUM);
 const Faculty = mongoose.model(schemaTitle.FACULTY);
 const Subject = mongoose.model(schemaTitle.SUBJECT);
+const Classes = mongoose.model(schemaTitle.CLASS);
+
 const { HttpNotFound } = require('../../utils/errors');
 const { AdminResponseMessages } = require('../../constants/ResponseMessages');
 const { CurriculumResponseMessages } = AdminResponseMessages;
@@ -21,7 +23,7 @@ const getInfoCurriculum = async (curriculum) => {
     return { ...curriculum['_doc'], faculty };
 }
 
-const getSubjectsOfCurriculum = async (curriculum) => {
+const getDetailSubjectsOfCurriculum = async (curriculum) => {
     let subjects = await Promise.all(curriculum.subjects.map(async (idSubject) => {
         return Subject.findById(idSubject, 'name code credit');
     }))
@@ -29,6 +31,30 @@ const getSubjectsOfCurriculum = async (curriculum) => {
     subjects = _.sortBy(subjects, 'name');
 
     return subjects;
+}
+
+const getInfoSubjectsOfCurriculum = async (curriculum) => {
+    let subjects = await Promise.all(curriculum.subjects.map(async (idSubject) => {
+        return Subject.findById(idSubject, 'name');
+    }))
+
+    subjects = _.sortBy(subjects, 'name');
+
+    return subjects;
+}
+
+exports.getInfoElementsInCurriculum = async (req, res) => {
+    const curriculum = await findCurriculumById(req.params.id);
+
+    const subjects = await getInfoSubjectsOfCurriculum(curriculum);
+
+    const classes = await Classes.find({ idCurriculum: curriculum._id }, 'name code');
+
+    res.json({
+        success: true,
+        subjects,
+        classes
+    })
 }
 
 exports.create = async (req, res) => {
@@ -46,16 +72,16 @@ exports.create = async (req, res) => {
     });
 };
 
-exports.getAllSubjects = async (req, res) => {
+exports.getDetailAllSubjects = async (req, res) => {
     const curriculum = await findCurriculumById(req.params.id);
 
-    const subjects = await getSubjectsOfCurriculum(curriculum);
+    const subjects = await getDetailSubjectsOfCurriculum(curriculum);
 
     const others = await Subject.find({
         _id: {
             $nin: curriculum.subjects
         }
-    }, 'name')
+    })
 
     res.json({
         success: true,
@@ -120,13 +146,13 @@ exports.addSubjects = async (req, res) => {
         _id: {
             $nin: curriculum.subjects
         }
-    }, 'name')
+    })
 
     await curriculum.save();
 
     res.json({
         message: CurriculumResponseMessages.UPDATE_SUCCESS,
-        subjects: await getSubjectsOfCurriculum(curriculum),
+        subjects: await getDetailSubjectsOfCurriculum(curriculum),
         others
     });
 }
@@ -142,13 +168,13 @@ exports.updateSubjects = async (req, res) => {
         _id: {
             $nin: curriculum.subjects
         }
-    }, 'name')
+    })
 
     await curriculum.save();
 
     res.json({
         message: CurriculumResponseMessages.UPDATE_SUCCESS,
-        subjects: await getSubjectsOfCurriculum(curriculum),
+        subjects: await getDetailSubjectsOfCurriculum(curriculum),
         others
     });
 }

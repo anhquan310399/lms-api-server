@@ -42,7 +42,7 @@ exports.create = async (req, res) => {
         idSemester: req.body.idSemester,
         config: req.body.config,
         idTeacher: req.body.idTeacher,
-        idSubject: course._id,
+        idSubject: subject._id,
         studentIds: courseClass.students
     });
 
@@ -90,7 +90,7 @@ exports.filter = async (req, res) => {
     })
     res.json({
         success: true,
-        allCourses: allCourses,
+        courses: allCourses,
         total
     });
 };
@@ -107,10 +107,11 @@ exports.find = async (req, res) => {
 exports.update = async (req, res) => {
     const course = await findCourseById(req.params.id);
 
-    course.name = req.body.name || course.name;
-    course.config = req.body.config || course.config;
-    course.idCourse = req.body.idCourse || course.idCourse;
-    course.idTeacher = req.body.idTeacher || course.idTeacher;
+    course.name = req.body.name;
+    course.config = req.body.config;
+    course.idSemester = req.body.idSemester;
+    course.idSubject = req.body.idSubject;
+    course.idTeacher = req.body.idTeacher;
 
     await course.save();
 

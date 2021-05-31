@@ -19,9 +19,10 @@ router.get("/statistic", authAdmin, catchErrors(adminCTL.getStatistic));
  * Route for curriculum controller
  */
 
+router.get("/curriculum/:id/elements", authAdmin, catchErrors(curriculumCTL.getInfoElementsInCurriculum));
 router.post("/curriculum/:id/subjects", authAdmin, catchErrors(curriculumCTL.addSubjects));
 router.put("/curriculum/:id/subjects", authAdmin, catchErrors(curriculumCTL.updateSubjects));
-router.get("/curriculum/:id/subjects", authAdmin, catchErrors(curriculumCTL.getAllSubjects));
+router.get("/curriculum/:id/subjects", authAdmin, catchErrors(curriculumCTL.getDetailAllSubjects));
 router.post("/curriculum/filter", authAdmin, catchErrors(curriculumCTL.filter));
 router.post("/curriculum", authAdmin, catchErrors(curriculumCTL.create));
 router.get("/curriculum", authAdmin, catchErrors(curriculumCTL.findAll));
@@ -55,6 +56,7 @@ router.delete("/class/:id", authAdmin, catchErrors(classCTL.delete));
 /**
  * Route for faculty controller
  */
+router.get("/faculty/:id/curriculums", authAdmin, catchErrors(facultyCTL.getAllInfoCurriculums));
 router.post("/faculty", authAdmin, catchErrors(facultyCTL.create));
 router.post("/faculty/filter", authAdmin, catchErrors(facultyCTL.filter));
 router.get("/faculty", authAdmin, catchErrors(facultyCTL.findAll));

@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const schemaTitle = require("../../constants/SchemaTitle");
 const Faculty = mongoose.model(schemaTitle.FACULTY);
+const Curriculum = mongoose.model(schemaTitle.CURRICULUM);
 const { HttpNotFound } = require('../../utils/errors');
 const { AdminResponseMessages } = require('../../constants/ResponseMessages');
 const { FacultyResponseMessages } = AdminResponseMessages;
@@ -11,6 +12,15 @@ const findFacultyById = async (id) => {
         throw new HttpNotFound(FacultyResponseMessages.NOT_FOUND(id))
     }
     return faculty;
+}
+
+exports.getAllInfoCurriculums = async (req, res) => {
+
+    const faculty = await findFacultyById(req.params.id);
+
+    const curriculums = await Curriculum.find({ idFaculty: faculty._id }, 'name');
+
+    res.json({ curriculums });
 }
 
 exports.create = async (req, res) => {
@@ -28,7 +38,7 @@ exports.create = async (req, res) => {
 };
 
 exports.findAll = async (req, res) => {
-    const faculties = await Faculty.find({},'name');
+    const faculties = await Faculty.find({}, 'name');
     res.json({ faculties });
 };
 

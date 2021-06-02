@@ -5,7 +5,7 @@ const { ForumResponseMessages } = ClientResponsesMessages
 
 exports.create = async (req, res) => {
     const course = req.course;
-    const timeline = findTimeline(course, req.query.idTimeline);
+    const timeline = findTimeline(course, req.body.idTimeline);
     const model = {
         name: req.body.data.name,
         description: req.body.data.description,
@@ -82,7 +82,7 @@ exports.findAll = async (req, res) => {
 
 exports.update = async (req, res) => {
     const course = req.course;
-    const { forum } = findForum(course, req.query.idTimeline, req.params.id);
+    const { forum } = findForum(course, req.body.idTimeline, req.params.id);
 
     const data = req.body.data;
     if (data.name) {

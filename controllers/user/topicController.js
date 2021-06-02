@@ -8,7 +8,7 @@ const { TopicResponseMessages } = ClientResponsesMessages
 
 exports.create = async (req, res) => {
     const course = req.course;
-    const { forum } = findForum(course, req.query.idTimeline, req.query.idForum, req.isStudent);
+    const { forum } = findForum(course, req.body.idTimeline, req.body.idForum, req.isStudent);
     const model = {
         name: req.body.data.name,
         content: req.body.data.content,
@@ -138,7 +138,7 @@ exports.updateDiscussion = async (req, res) => {
 exports.deleteDiscussion = async (req, res) => {
     const course = req.course;
 
-    const { topic } = findTopic(course, req.body.idTimeline, req.body.idForum, req.params.idTopic, req.isStudent);
+    const { topic } = findTopic(course, req.query.idTimeline, req.query.idForum, req.params.idTopic, req.isStudent);
 
     const discussion = topic.discussions.find(value => value._id.equals(req.params.idDiscussion));
 

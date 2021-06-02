@@ -10,7 +10,7 @@ const { AssignResponseMessages } = ClientResponsesMessages
 
 exports.create = async (req, res) => {
     const course = req.course;
-    const timeline = findTimeline(course, req.query.idTimeline);
+    const timeline = findTimeline(course, req.body.idTimeline);
     const data = req.body.data;
     const model = {
         name: data.name,
@@ -149,7 +149,7 @@ exports.findAll = async (req, res) => {
 exports.update = async (req, res) => {
     const data = req.body.data;
     const course = req.course;
-    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id);
+    const { assignment } = findAssignment(course, req.body.idTimeline, req.params.id);
 
     if (data.name) {
         assignment.name = data.name;

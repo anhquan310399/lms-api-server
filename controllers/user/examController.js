@@ -272,7 +272,7 @@ exports.submitExam = async (req, res) => {
 exports.doExam = async (req, res) => {
     const course = req.course;
 
-    const { exam } = findExam(course, req.body.idTimeline, req.params.id, true);
+    const { exam } = findExam(course, req.query.idTimeline, req.params.id, true);
 
     const { submission, totalTime } = await checkSubmission(course, exam, req.params.idSubmission, req.student._id);
 
@@ -315,7 +315,7 @@ exports.doExam = async (req, res) => {
 exports.attemptExam = async (req, res) => {
     const course = req.course;
 
-    const { exam } = findExam(course, req.body.idTimeline, req.params.id, true);
+    const { exam } = findExam(course, req.query.idTimeline, req.params.id, true);
 
     const today = new Date();
 

@@ -37,7 +37,7 @@ const createQuestionnaire = async (questions) => {
 exports.create = async (req, res) => {
     const course = req.course;
 
-    const timeline = findTimeline(course, req.query.idTimeline);
+    const timeline = findTimeline(course, req.body.idTimeline);
 
     const data = req.body.data;
 
@@ -142,7 +142,7 @@ exports.findAll = async (req, res) => {
 exports.update = async (req, res) => {
     const course = req.course;
 
-    const { survey } = findSurvey(course, req.query.idTimeline, req.params.id);
+    const { survey } = findSurvey(course, req.body.idTimeline, req.params.id);
 
     const data = req.body.data;
 
@@ -217,7 +217,7 @@ exports.attemptSurvey = async (req, res) => {
 exports.replySurvey = async (req, res) => {
     const course = req.course;
 
-    const { survey } = findSurvey(course, req.query.idTimeline, req.params.id, true);
+    const { survey } = findSurvey(course, req.body.idTimeline, req.params.id, true);
 
     const replied = survey.responses.find(value => value.idStudent.equals(req.student._id));
 

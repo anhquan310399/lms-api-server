@@ -5,7 +5,7 @@ const { AnnounceResponseMessages } = ClientResponsesMessages
 
 exports.create = async (req, res) => {
     const course = req.course;
-    const timeline = findTimeline(course, req.query.idTimeline);
+    const timeline = findTimeline(course, req.body.idTimeline);
     const announcement = {
         name: req.body.data.name,
         content: req.body.data.content
@@ -44,7 +44,7 @@ exports.findAll = async (req, res) => {
 
 exports.update = async (req, res) => {
     const course = req.course;
-    const { announcement } = findAnnouncement(course, req.query.idTimeline, req.params.id);
+    const { announcement } = findAnnouncement(course, req.body.idTimeline, req.params.id);
 
     announcement.name = req.body.data.name;
     announcement.content = req.body.data.content;

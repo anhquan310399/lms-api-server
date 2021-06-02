@@ -19,10 +19,16 @@ const questionnaire = new mongoose.Schema({
     },
 }, { _id: false });
 
+var notEmpty = function(questionnaires){
+    if(!questionnaires || questionnaires.length === 0){return false}
+    else {return true};
+}
+
 const setting = new mongoose.Schema({
     questionnaires: {
         type: [questionnaire],
         required: [true, ExamValidate.SETTING_QUESTIONNAIRE],
+        validate :[notEmpty,ExamValidate.SETTING_QUESTIONNAIRE]
     },
     timeToDo: {
         type: Number,

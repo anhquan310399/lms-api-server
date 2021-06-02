@@ -103,21 +103,26 @@ io.on("connection", (socket) => {
     socket.on('join-zoom', (zoomId, peerId) => {
         if (!users[zoomId]) { users[zoomId] = [] }
 
-        const zoomUser = users[zoomId].find(value => value.userId === socket.idUser);
+        const zoomUser = users[zoomId].find(value => value.idUser === socket.idUser);
 
         if (!zoomUser) {
-            users[zoomId] = [...users[zoomId], { peerId, userId: socket.idUser }];
+            users[zoomId] = [...users[zoomId], { peerId, idUser: socket.idUser }];
             socket.join(zoomId)
             io.to(socket.id).emit('200');
+
+            console.log("User in zoom", users[zoomId]);
 
             getUserById(socket.idUser).then(user => {
                 socket.to(zoomId).emit('user-connected', peerId, user);
             });
 
             socket.on('get-user', (peerId) => {
+
+                console.log("get-user", peerId, "socket get", socket.idUser);
+
                 const user = users[zoomId].find((user) => user.peerId === peerId);
                 if (user) {
-                    getUserById(user.userId).then(user => {
+                    getUserById(user.idUser).then(user => {
                         io.to(socket.id).emit('receive-user', user);
                     });
                 }
@@ -136,14 +141,14 @@ io.on("connection", (socket) => {
                 //console.log("A user left zoom: " + peerId);
                 socket.to(zoomId).emit('user-disconnected', peerId);
                 socket.leave(zoomId);
-                users[zoomId] = users[zoomId].filter(({ userId }) => userId !== socket.idUser);
+                users[zoomId] = users[zoomId].filter(({ idUser }) => idUser !== socket.idUser);
 
             })
             socket.on('disconnect', () => {
                 //console.log("A user disconnect zoom: " + peerId);
                 io.to(zoomId).emit('user-disconnected', peerId);
                 socket.leave(zoomId);
-                users[zoomId] = users[zoomId].filter(({ userId }) => userId !== socket.idUser);
+                users[zoomId] = users[zoomId].filter(({ idUser }) => idUser !== socket.idUser);
             })
         } else {
             io.to(socket.id).emit('403', 'You has already join room in another application!');

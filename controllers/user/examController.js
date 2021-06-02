@@ -278,20 +278,20 @@ exports.doExam = async (req, res) => {
 
     const setting = exam.setting;
 
-    const questions = submission.answers.map(value => {
+    const questions = await Promise.all(submission.answers.map(async (value) => {
 
-        const questions = Promise.all(setting.questionnaires.reduce(async (result, current) => {
+        const submissionQuestions = setting.questionnaires.reduce((result, current) => {
 
             const chapter = findChapterOfQuizBank(course, current.id);
 
-            const questions = await result;
+            result = result.concat(chapter.questions);
 
-            questions = questions.concat(chapter.questions);
+            return result;
+        }, []);
 
-            return questions;
-        }, []));
+        console.log(submissionQuestions);
 
-        const question = questions.find(question => question._id.equals(value.idQuestion));
+        const question = submissionQuestions.find(question => question._id.equals(value.idQuestion));
 
         return {
             _id: question._id,
@@ -299,7 +299,7 @@ exports.doExam = async (req, res) => {
             typeQuestion: question.typeQuestion,
             answers: question.answers.map(value => { return { _id: value._id, answer: value.answer } })
         }
-    });
+    }));
 
     const remainTime = setting.timeToDo * 60 * 1000 - totalTime * 1000
 
@@ -347,7 +347,7 @@ exports.attemptExam = async (req, res) => {
 
         } else {
 
-            const questions = setting.questionnaires.map(questionnaire => {
+            let questions = setting.questionnaires.map(questionnaire => {
                 const chapter = findChapterOfQuizBank(course, questionnaire.id);
 
                 const questions = _.sampleSize(chapter.questions, questionnaire.questionCount)

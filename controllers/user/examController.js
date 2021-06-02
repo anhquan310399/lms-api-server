@@ -10,7 +10,7 @@ const { ExamResponseMessages } = ClientResponsesMessages
 exports.create = async (req, res) => {
     const course = req.course;
 
-    const timeline = findTimeline(course, req.query.idTimeline);
+    const timeline = findTimeline(course, req.body.idTimeline);
 
     const setting = req.body.data.setting;
 
@@ -180,7 +180,7 @@ exports.findAll = async (req, res) => {
 exports.update = async (req, res) => {
     const course = req.course;
 
-    const { exam } = findExam(course, req.query.idTimeline, req.params.id);
+    const { exam } = findExam(course, req.body.idTimeline, req.params.id);
 
     const data = req.body.data;
     exam.name = data.name
@@ -242,7 +242,7 @@ exports.lock = async (req, res) => {
 exports.submitExam = async (req, res) => {
     const course = req.course;
 
-    const { exam } = findExam(course, req.query.idTimeline, req.params.id, true);
+    const { exam } = findExam(course, req.body.idTimeline, req.params.id, true);
 
 
     const { submission, totalTime } = await checkSubmission(course, exam, req.params.idSubmission, req.student._id);
@@ -272,7 +272,7 @@ exports.submitExam = async (req, res) => {
 exports.doExam = async (req, res) => {
     const course = req.course;
 
-    const { exam } = findExam(course, req.query.idTimeline, req.params.id, true);
+    const { exam } = findExam(course, req.body.idTimeline, req.params.id, true);
 
     const { submission, totalTime } = await checkSubmission(course, exam, req.params.idSubmission, req.student._id);
 
@@ -288,8 +288,6 @@ exports.doExam = async (req, res) => {
 
             return result;
         }, []);
-
-        console.log(submissionQuestions);
 
         const question = submissionQuestions.find(question => question._id.equals(value.idQuestion));
 
@@ -317,7 +315,7 @@ exports.doExam = async (req, res) => {
 exports.attemptExam = async (req, res) => {
     const course = req.course;
 
-    const { exam } = findExam(course, req.query.idTimeline, req.params.id, true);
+    const { exam } = findExam(course, req.body.idTimeline, req.params.id, true);
 
     const today = new Date();
 

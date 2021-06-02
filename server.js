@@ -113,18 +113,22 @@ io.on("connection", (socket) => {
             console.log("User in zoom", users[zoomId]);
 
             getUserById(socket.idUser).then(user => {
+                console.log("user-connected", user, ", peer id", peerId);
+
                 socket.to(zoomId).emit('user-connected', peerId, user);
             });
 
             socket.on('get-user', (peerId) => {
 
-                console.log("get-user", peerId, "socket get", socket.idUser);
+                console.log("get-user: ", peerId, ", user get: ", socket.idUser, "socket: ", socket.id);
 
                 const user = users[zoomId].find((user) => user.peerId === peerId);
                 if (user) {
                     getUserById(user.idUser).then(user => {
                         io.to(socket.id).emit('receive-user', user);
                     });
+                } else {
+                    console.log("get-user: ", peerId, ", not found user");
                 }
             })
 

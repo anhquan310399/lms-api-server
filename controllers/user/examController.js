@@ -347,7 +347,7 @@ exports.attemptExam = async (req, res) => {
 
         } else {
 
-            let questions = setting.questionnaires.map(questionnaire => {
+            let questions = setting.questionnaires.reduce((result,questionnaire) => {
                 const chapter = findChapterOfQuizBank(course, questionnaire.id);
 
                 const questions = _.sampleSize(chapter.questions, questionnaire.questionCount)
@@ -359,10 +359,10 @@ exports.attemptExam = async (req, res) => {
                             answers: question.answers.map(value => { return { _id: value.id, answer: value.answer } })
                         }
                     });
-                return questions;
-            });
+                return result.concat(questions);
+            },[]);
 
-            questions = _.sample(questions);
+            questions = _.sampleSize(questions,questions.length);
 
             const submit = {
                 idStudent: req.student._id,

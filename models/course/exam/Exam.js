@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const AnswerSheet = require("../AnswerSheet");
+const AnswerSheet = require("./AnswerSheet");
 
 const { ExamValidate } = require("../../../constants/ValidationMessage");
 const schemaTitle = require("../../../constants/SchemaTitle");

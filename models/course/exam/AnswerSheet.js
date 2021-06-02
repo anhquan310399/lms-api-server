@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
-const schemaTitle = require("../../constants/SchemaTitle");
-const { findChapterOfQuizBank } = require('../../services/FindHelpers');
+const schemaTitle = require("../../../constants/SchemaTitle");
+const { findChapterOfQuizBank } = require('../../../services/FindHelpers');
 
 const studentAnswer = new mongoose.Schema({
     idQuestion: {
@@ -48,18 +48,16 @@ studentAnswerSheet.pre('save', async function (next) {
 
         let totalQuestion = 0;
 
-        const questions = Promise.all(exam.setting.questionnaires.reduce(async (result, current) => {
+        const questions = exam.setting.questionnaires.reduce((result, current) => {
 
             totalQuestion += current.questionCount;
 
             const chapter = findChapterOfQuizBank(course, current.id);
 
-            const questions = await result;
+            result = result.concat(chapter.questions);
 
-            questions = questions.concat(chapter.questions);
-
-            return questions;
-        }, []));
+            return result;
+        }, []);
 
         const correct = await answerSheet.answers.reduce(async (result, currentAnswer) => {
 

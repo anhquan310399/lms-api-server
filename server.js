@@ -112,10 +112,14 @@ io.on("connection", (socket) => {
 
             console.log("User in zoom", users[zoomId]);
 
-            getUserById(socket.idUser).then(user => {
-                console.log("user-connected", user, ", peer id", peerId);
+            socket.on('share-screen', () => {
+                console.log("share-screen ", socket.idUser);
 
-                socket.to(zoomId).emit('user-connected', peerId, user);
+                getUserById(socket.idUser).then(user => {
+                    console.log("user-connected", user, ", peer id", peerId, " socket id: ", socket.id);
+
+                    socket.to(zoomId).emit('user-connected', peerId, user);
+                });
             });
 
             socket.on('get-user', (peerId) => {

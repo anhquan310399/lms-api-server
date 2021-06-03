@@ -101,7 +101,6 @@ exports.uploadFile = async (req, res) => {
         name: req.body.data.name,
         path: req.body.data.path,
         type: req.body.data.type,
-        uploadDay: new Date(),
         isDeleted: req.body.data.isDeleted || false
     }
     const index = timeline.files.push(file);

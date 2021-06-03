@@ -22,7 +22,7 @@ exports.create = async (req, res) => {
             overDueDate: data.setting.isOverDue ? new Date(data.setting.overDueDate) : null,
             fileSize: data.setting.fileSize,
         },
-        attachments: data.file,
+        attachments: data.file, 
         isDeleted: data.isDeleted
     };
     const length = timeline.assignments.push(model);
@@ -212,7 +212,7 @@ exports.lock = async (req, res) => {
 
 exports.submit = async (req, res) => {
     const course = req.course;
-    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id, true);
+    const { assignment } = findAssignment(course, req.body.idTimeline, req.params.id, true);
 
     const today = new Date();
     const setting = assignment.setting;
@@ -223,7 +223,6 @@ exports.submit = async (req, res) => {
             name: req.body.file.name,
             path: req.body.file.path,
             type: req.body.file.type,
-            uploadDay: new Date()
         }
         let index = 0;
         const submitted = assignment.submissions.find(value => value.idStudent.equals(req.student._id));
@@ -264,7 +263,7 @@ exports.submit = async (req, res) => {
 
 exports.gradeSubmission = async (req, res) => {
     const course = req.course;
-    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id);
+    const { assignment } = findAssignment(course, req.body.idTimeline, req.params.id);
 
     const submitted = assignment.submissions.find(value => value._id.equals(req.params.idSubmission));
     if (!submitted) {
@@ -293,7 +292,7 @@ exports.gradeSubmission = async (req, res) => {
 
 exports.commentFeedback = async (req, res) => {
     const course = req.course;
-    const { assignment } = findAssignment(course, req.query.idTimeline, req.params.id, req.isStudent);
+    const { assignment } = findAssignment(course, req.body.idTimeline, req.params.id, req.isStudent);
 
     const submitted = assignment.submissions.find(value => value._id.equals(req.params.idSubmission));
     if (!submitted) {

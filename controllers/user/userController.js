@@ -108,7 +108,8 @@ exports.update = async (req, res) => {
     await user.save();
 
     res.json({
-        user: await User.findById(user._id, DETAILS.DETAIL)
+        user: await User.findById(user._id, DETAILS.DETAIL),
+        message: UserResponseMessages.UPDATE_PROFILE_SUCCESS,
     })
 };
 

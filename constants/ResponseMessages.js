@@ -109,6 +109,7 @@ const ClientResponsesMessages = {
         RESET_PWD_SUCCESS: 'Reset password successfully!',
         UPDATE_PWD_INVALID: 'Password is not valid',
         UPDATE_PWD_SUCCESS: `Update password successfully`,
+        UPDATE_PROFILE_SUCCESS: `Update profile successfully`,
         AUTHENTICATE_NOT_FOUND: 'Authentication failed. User not found',
         AUTHENTICATE_PWD_INVALID: 'Authentication failed. Wrong password!',
         AUTHENTICATE_SUCCESS: 'Login successfully!',

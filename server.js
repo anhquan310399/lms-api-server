@@ -34,6 +34,14 @@ const server = app.listen(process.env.PORT || '8000', () => {
     console.log(`Server listening on port ${process.env.PORT || '8000'}`);
 });
 
+const { ExpressPeerServer } = require('peer');
+
+const peerServer = ExpressPeerServer(server, {
+    path: '/'
+});
+
+app.use('/', peerServer);
+
 const io = require("socket.io")(server, { cors: { origin: '*' } });
 const jwt = require("jsonwebtoken");
 

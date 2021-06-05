@@ -245,7 +245,7 @@ exports.denyEnrollRequest = async (req, res) => {
     });
 }
 
-//Exit subject
+//Exit course
 exports.getExitRequests = async (req, res) => {
     const course = req.course;
 
@@ -339,7 +339,7 @@ exports.denyExitRequest = async (req, res) => {
     });
 }
 
-//List students in subject
+//List students in course
 exports.getListStudent = async (req, res) => {
     const course = req.course;
 
@@ -380,15 +380,15 @@ exports.addStudent = async (req, res) => {
 };
 
 exports.removeStudent = async (req, res) => {
-    const subject = req.subject;
+    const course = req.course;
 
-    const index = subject.studentIds.indexOf(req.body.idStudent);
+    const index = course.studentIds.indexOf(req.body.idStudent);
 
     if (index === -1) {
         throw new HttpNotFound(CourseResponseMessages.NOT_FOUND_STUDENT_IN_COURSE);
     }
-    subject.studentIds.splice(index, 1);
-    await subject.save();
+    course.studentIds.splice(index, 1);
+    await course.save();
 
     res.json({
         success: true,
@@ -536,9 +536,9 @@ exports.getSubjectTranscript = async (req, res) => {
 }
 
 exports.getSubjectTranscriptTotal = async (req, res) => {
-    let subject = req.subject;
+    let course = req.course;
     let today = new Date();
-    let assignmentOrExam = await getListAssignmentAndExam(subject, today);
+    let assignmentOrExam = await getListAssignmentAndExam(course, today);
 
     let fields = { 'c0': 'MSSV', 'c1': 'Họ', 'c2': 'Tên' }
     let ratios = { 'c0': null, 'c1': null, 'c2': null }
@@ -547,7 +547,7 @@ exports.getSubjectTranscriptTotal = async (req, res) => {
     assignmentOrExam.forEach(value => {
         let key = 'c' + count++;
         fields[key] = value.name;
-        let transcript = subject.transcript.find(ratio => ratio.idField.equals(value._id));
+        let transcript = course.transcript.find(ratio => ratio.idField.equals(value._id));
         ratios[key] = {
             _id: transcript._id,
             ratio: transcript.ratio
@@ -555,7 +555,7 @@ exports.getSubjectTranscriptTotal = async (req, res) => {
         totalRatio += transcript.ratio;
     });
 
-    let data = await Promise.all(subject.studentIds.map(
+    let data = await Promise.all(course.studentIds.map(
         async (idStudent) => {
             const student = await getUserById(idStudent, DETAILS.COMMON)
                 .then(value => { return value });
@@ -599,16 +599,16 @@ exports.getSubjectTranscriptTotal = async (req, res) => {
 }
 
 exports.updateRatioTranscript = async (req, res) => {
-    let subject = req.subject;
+    let course = req.course;
     let adjust = req.body;
     await adjust.forEach(async (value) => {
-        let transcript = await subject.transcript.find(ratio => ratio._id.equals(value._id));
+        let transcript = await course.transcript.find(ratio => ratio._id.equals(value._id));
         if (transcript) {
             transcript.ratio = value.ratio;
         }
     });
 
-    await subject.save();
+    await course.save();
 
     return this.getSubjectTranscriptTotal(req, res);
 }
@@ -690,8 +690,8 @@ exports.getCloneOfAnotherCourse = async (req, res) => {
 exports.getDeadline = async (req, res) => {
     const courses = await Course.find({ 'studentIds': req.student._id, isDeleted: false });
     let deadline = [];
-    courses.forEach(subject => {
-        deadline = deadline.concat(getDeadlineOfCourse(subject, req.student));
+    courses.forEach(course => {
+        deadline = deadline.concat(getDeadlineOfCourse(course, req.student));
     });
 
     res.json({

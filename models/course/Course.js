@@ -12,7 +12,7 @@ const { CourseValidate } = require("../../constants/ValidationMessage");
 
 const ratioSchema = new mongoose.Schema({
     idField: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
         required: true
     },
     ratio: {

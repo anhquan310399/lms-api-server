@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const { HttpNotFound, HttpUnauthorized, HttpBadRequest } = require('../../utils/errors');
 const { getCommonInfo } = require('../../services/DataHelpers');
 const { findTimeline, findSurvey } = require('../../services/FindHelpers');
@@ -6,6 +7,9 @@ const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
 const { SurveyResponseMessages } = ClientResponsesMessages
 
 const createQuestionnaire = async (questions) => {
+    if (!questions || questions.length === 0) {
+        throw new HttpBadRequest(SurveyResponseMessages.QUESTIONS_NOT_VALID)
+    }
     const questionnaire = await Promise.all(questions.map(async (question) => {
         if (question.typeQuestion === 'choice' || question.typeQuestion === 'multiple') {
             let answer = await question.answer.map(value => {
@@ -15,17 +19,15 @@ const createQuestionnaire = async (questions) => {
                 }
             })
             return {
-                _id: question._id,
                 identity: question.identity,
-                question: question.question,
+                content: question.content,
                 typeQuestion: question.typeQuestion,
                 answer: answer
             }
         } else if (question.typeQuestion === 'fill') {
             return {
-                _id: question._id,
                 identity: question.identity,
-                question: question.question,
+                content: question.content,
                 typeQuestion: question.typeQuestion,
             }
         }
@@ -71,7 +73,7 @@ exports.find = async (req, res) => {
     const setting = survey.setting;
     const isRemain = today <= setting.expireTime;
     const isOpen = (today >= setting.startTime && today <= setting.expireTime)
-    const timeRemain = moment(survey.expireTime).from(moment(today));
+    const timeRemain = moment(setting.expireTime).from(moment(today));
 
     if (req.isStudent) {
         const reply = survey.responses.find(value => value.idStudent.equals(req.user._id));
@@ -81,11 +83,11 @@ exports.find = async (req, res) => {
                 _id: survey._id,
                 name: survey.name,
                 description: survey.description,
-                expireTime: survey.expireTime,
+                setting: survey.setting,
                 isOpen: isOpen,
                 isRemain: isRemain,
                 timeRemain: timeRemain,
-                canAttempt: reply && isOpen
+                canAttempt: !reply && isOpen
             }
         })
     } else {

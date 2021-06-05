@@ -137,7 +137,7 @@ io.on("connection", (socket) => {
                 const user = users[zoomId].find((user) => user.peerId === peerId);
                 if (user) {
                     getUserById(user.idUser).then(user => {
-                        io.to(socket.id).emit('receive-user', user);
+                        io.to(socket.id).emit(`receive-user-${peerId}`, user);
                     });
                 } else {
                     console.log("get-user: ", peerId, ", not found user");

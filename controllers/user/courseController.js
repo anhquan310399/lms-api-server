@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const schemaTitle = require("../../constants/SchemaTitle");
 const Course = mongoose.model(schemaTitle.COURSE);
 const User = mongoose.model(schemaTitle.USER);
+const Subject = mongoose.model(schemaTitle.SUBJECT);
 const { HttpNotFound, HttpBadRequest, HttpUnauthorized } = require('../../utils/errors');
 const examStatusCodes = require('../../constants/examStatusCodes');
 const {
@@ -18,18 +19,30 @@ const { MailTemplate } = require('../../utils/mailOptions');
 const { sendMail } = require('../../services/SendMail');
 const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
-const { getCurrentSemester } = require('../../common/getCurrentSemester');
 const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
 const { CourseResponseMessages } = ClientResponsesMessages
 
+const { getPublicCodeOfNewCourse } = require("../../common/getCodeOfNewCourse");
+
 
 exports.create = async (req, res) => {
+    const subject = await Subject.findById(req.body.idSubject);
+
+    if (!subject) {
+        throw new HttpNotFound(CourseResponseMessages.NOT_FOUND_SUBJECT(req.body.idSubject));
+    }
+
+    const { code, name } = await getPublicCodeOfNewCourse(subject);
+
     const data = req.body;
-    const curSemester = getCurrentSemester();
     const course = new Course({
-        name: data.name,
-        idSemester: curSemester._id,
-        config: data.config,
+        name: data.name || name,
+        idSubject: data.idSubject,
+        code: code,
+        config: {
+            role: 'public',
+            acceptEnroll: data.config.acceptEnroll
+        },
         idTeacher: req.teacher._id,
     });
 

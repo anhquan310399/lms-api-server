@@ -161,6 +161,9 @@ const ClientResponsesMessages = {
         ADD_STUDENT_SUCCESS(code) {
             return `Add Student with code '${code}' successfully!`;
         },
+        NOT_FOUND_SUBJECT(code) {
+            return `Not found subject with id - '${code}'`;
+        },
         NOT_FOUND_STUDENT_IN_COURSE: `Not found this student in course`,
         REMOVE_STUDENT_SUCCESS: 'Remove student successfully!',
         ADJUST_INDEX_TIMELINES_SUCCESS: 'Adjust index of timeline successfully!',

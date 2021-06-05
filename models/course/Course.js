@@ -41,10 +41,16 @@ const Schema = mongoose.Schema({
         type: String,
         required: [true, CourseValidate.NAME]
     },
+    config: {
+        type: config,
+        required: [true, CourseValidate.CONFIG]
+    },
     idSemester: {
         type: mongoose.Schema.Types.ObjectId,
         ref: schemaTitle.SEMESTER,
-        required: [true, CourseValidate.ID_SEMESTER],
+        required: [function () {
+            return this.config.role === 'private'
+        }, CourseValidate.ID_SEMESTER],
         validate: function (id) {
             Semester.findById(id)
                 .then(course => {
@@ -78,10 +84,6 @@ const Schema = mongoose.Schema({
     code: {
         type: String,
         required: true
-    },
-    config: {
-        type: config,
-        required: [true, CourseValidate.CONFIG]
     },
     idTeacher: {
         type: mongoose.Schema.Types.ObjectId,

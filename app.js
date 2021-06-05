@@ -20,6 +20,7 @@ app.use("/topic", require("./routes/course/topicRoute"));
 app.use("/quiz-bank", require("./routes/course/quizBankRoute"));
 app.use("/exam", require("./routes/course/examRoute"));
 app.use("/survey", require("./routes/course/surveyRoute"));
+app.use("/curriculum", require("./routes/curriculumRoute"));
 
 const jwt = require('jsonwebtoken')
 app.get("/verify", (req, res) => {

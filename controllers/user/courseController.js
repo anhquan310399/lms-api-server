@@ -574,8 +574,8 @@ exports.getSubjectTranscriptTotal = async (req, res) => {
                 .then(value => { return value });
             let data = {
                 'c0': student.code,
-                'c1': student.lastName,
-                'c2': student.firstName
+                'c1': student.firstName,
+                'c2': student.lastName
             };
             let count = 3;
             let grade = await Promise.all(assignmentOrExam.map(async (value) => {

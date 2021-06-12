@@ -3,9 +3,11 @@ const schemaTitle = require("../../constants/SchemaTitle");
 const Course = mongoose.model(schemaTitle.COURSE);
 const Subject = mongoose.model(schemaTitle.SUBJECT);
 const Classes = mongoose.model(schemaTitle.CLASS);
+const User = mongoose.model(schemaTitle.USER);
 const { HttpNotFound } = require('../../utils/errors');
 const { getConfigInfoOfCourse } = require('../../services/DataHelpers');
 const _ = require('lodash');
+const DETAILS = require('../../constants/AccountDetail');
 
 const { AdminResponseMessages } = require('../../constants/ResponseMessages');
 const { CourseResponseMessages } = AdminResponseMessages;
@@ -146,4 +148,91 @@ exports.lock = async (req, res) => {
         message: CourseResponseMessages.LOCK_MESSAGE(course),
         course: await getConfigInfoOfCourse(course)
     });
+};
+
+exports.updateStudents = async (req, res) => {
+    const course = await findCourseById(req.params.id);
+
+    let data = req.body.students;
+
+    data = data.filter((a, b) => data.indexOf(a) === b);
+
+    course.studentIds = data;
+
+    await course.save();
+
+    const students = await Promise.all(course.studentIds.map(async (studentId) => {
+        return User.findById(studentId,
+            DETAILS.CONFIG_ADMIN);
+    }));
+
+
+    res.json({
+        success: true,
+        students,
+        message: CourseResponseMessages.UPDATE_STUDENTS_SUCCESS,
+    })
+}
+
+exports.getAllStudents = async (req, res) => {
+
+    const course = await findCourseById(req.params.id);
+
+    const students = await Promise.all(course.studentIds.map(async (studentId) => {
+        return User.findById(studentId,
+            DETAILS.CONFIG_ADMIN);
+    }));
+
+    res.json({
+        success: true,
+        students
+    })
+}
+
+exports.addStudents = async (req, res) => {
+
+    const course = await findCourseById(req.params.id);
+
+    const data = req.body.students;
+
+    let ids = await Promise.all(data.map(async(student) => {
+
+        let exist = await User.findOne({
+            $or: [
+                { code: student.code }, { emailAddress: student.emailAddress }
+            ]
+        });
+
+        if (!exist) {
+            const data = new User({
+                code: student.code,
+                idPrivilege: PRIVILEGES.STUDENT,
+                emailAddress: student.emailAddress,
+                firstName: student.firstName,
+                lastName: student.lastName,
+                status: STATUS.NOT_ACTIVATED
+            });
+            exist = await data.save();
+        }
+
+        return exist._id;
+    }));
+
+    ids = course.studentIds.concat(ids);
+
+    ids = ids.filter((a, b) => ids.indexOf(a) === b);
+
+    course.studentIds = ids;
+
+    await course.save();
+
+    const students = await Promise.all(course.studentIds.map(async (studentId) => {
+        return User.findById(studentId,
+            DETAILS.CONFIG_ADMIN);
+    }));
+
+    res.json({
+        message: CourseResponseMessages.ADD_STUDENTS_SUCCESS,
+        students: students
+    })
 };

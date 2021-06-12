@@ -13,7 +13,8 @@ const classCTL = require("../../controllers/admin/classController");
 
 const { authAdmin } = require("../../middlewares/auth")
 
-router.get("/statistic", authAdmin, catchErrors(adminCTL.getStatistic));
+router.get("/statistic/dashboard", authAdmin, catchErrors(adminCTL.getDashBoardStatistic));
+router.get("/statistic/learning", authAdmin, catchErrors(adminCTL.getLearningResultOfSemester));
 
 /**
  * Route for curriculum controller
@@ -84,7 +85,9 @@ router.put('/course/:id', authAdmin, catchErrors(courseCTL.update));
 router.put('/course/:id/lock', authAdmin, catchErrors(courseCTL.lock));
 router.delete('/course/:id', authAdmin, catchErrors(courseCTL.delete));
 router.get('/course/:id', authAdmin, catchErrors(courseCTL.find));
-
+router.get("/course/:id/students", authAdmin, catchErrors(courseCTL.getAllStudents));
+router.post("/course/:id/students", authAdmin, catchErrors(courseCTL.addStudents));
+router.put("/course/:id/students", authAdmin, catchErrors(courseCTL.updateStudents));
 /**
  * Route for privilege controller
  */

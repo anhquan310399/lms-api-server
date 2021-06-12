@@ -3,7 +3,7 @@ const schemaTitle = require("../../constants/SchemaTitle");
 const Classes = mongoose.model(schemaTitle.CLASS);
 const User = mongoose.model(schemaTitle.USER);
 const Curriculum = mongoose.model(schemaTitle.CURRICULUM);
-const { HttpNotFound } = require('../../utils/errors');
+const { HttpNotFound, HttpBadRequest } = require('../../utils/errors');
 const { AdminResponseMessages } = require('../../constants/ResponseMessages');
 const { ClassResponseMessages } = AdminResponseMessages;
 const PRIVILEGES = require('../../constants/PrivilegeCode');
@@ -22,7 +22,6 @@ const getInfoClass = async (cls) => {
     const curriculum = await Curriculum.findById(cls.idCurriculum, 'name');
     return { ...cls['_doc'], curriculum };
 }
-
 
 exports.create = async (req, res) => {
     const data = new Classes({
@@ -100,7 +99,7 @@ exports.addStudents = async (req, res) => {
 
     const data = req.body.students;
 
-    let ids = await Promise.all(data.map(async(student) => {
+    let ids = await Promise.all(data.map(async (student) => {
 
         let exist = await User.findOne({
             $or: [
@@ -121,6 +120,16 @@ exports.addStudents = async (req, res) => {
         }
 
         return exist._id;
+    }));
+
+    await Promise.all(ids.map(async (idStudent) => {
+        const exist = await Classes.find({
+            _id: { $ne: cls._id },
+            'students': idStudent
+        });
+        if (exist) {
+            throw new HttpBadRequest(ClassResponseMessages.STUDENT_IN_ANOTHER_CLASS);
+        }
     }));
 
     ids = cls.students.concat(ids);
@@ -148,6 +157,16 @@ exports.updateStudents = async (req, res) => {
     let data = req.body.students;
 
     data = data.filter((a, b) => data.indexOf(a) === b);
+
+    await Promise.all(data.map(async (idStudent) => {
+        const exist = await Classes.find({
+            _id: { $ne: cls._id },
+            'students': idStudent
+        });
+        if (exist) {
+            throw new HttpBadRequest(ClassResponseMessages.STUDENT_IN_ANOTHER_CLASS);
+        }
+    }));
 
     cls.students = data;
 

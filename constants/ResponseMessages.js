@@ -51,7 +51,9 @@ const AdminResponseMessages = {
         },
         NOT_FOUND_SUBJECT(id) {
             return `Not found subject with id - ${id}`
-        }
+        },
+        ADD_STUDENTS_SUCCESS: 'Add students to course successfully!',
+        UPDATE_STUDENTS_SUCCESS: 'Update students of course successfully!'
     },
     UserResponseMessages: {
         CREATE_SUCCESS(role) {
@@ -91,7 +93,8 @@ const AdminResponseMessages = {
         UPDATE_SUCCESS: 'Update class successfully!',
         DELETE_SUCCESS: 'Delete class successfully!',
         ADD_STUDENTS_SUCCESS: 'Add students to class successfully!',
-        UPDATE_STUDENTS_SUCCESS: 'Update students of class successfully!'
+        UPDATE_STUDENTS_SUCCESS: 'Update students of class successfully!',
+        STUDENT_IN_ANOTHER_CLASS: 'Student has already in another class'
     }
 }
 

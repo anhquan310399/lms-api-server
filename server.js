@@ -114,19 +114,23 @@ io.on("connection", (socket) => {
         const zoomUser = users[zoomId].find(value => value.idUser === socket.idUser);
 
         if (!zoomUser) {
-            users[zoomId] = [...users[zoomId], { peerId, idUser: socket.idUser }];
+            users[zoomId] = [...users[zoomId], { peerId, idUser: socket.idUser, socketId: socket.id }];
             socket.join(zoomId)
             io.to(socket.id).emit('200');
 
             console.log("User in zoom", users[zoomId]);
 
-            socket.on('share-screen', () => {
+            socket.on('share-screen', (isMuted) => {
                 console.log("share-screen ", socket.idUser);
 
+                const user = users[zoomId].find((user) => user.peerId === peerId);
+                if (user) {
+                    user.isMuted = isMuted;
+                }
                 getUserById(socket.idUser).then(user => {
                     console.log("user-connected", user, ", peer id", peerId, " socket id: ", socket.id);
 
-                    socket.to(zoomId).emit('user-connected', peerId, user);
+                    socket.to(zoomId).emit('user-connected', peerId, user, isMuted);
                 });
             });
 
@@ -135,14 +139,15 @@ io.on("connection", (socket) => {
                 console.log("get-user: ", peerId, ", user get: ", socket.idUser, "socket: ", socket.id);
 
                 const user = users[zoomId].find((user) => user.peerId === peerId);
+                const isMuted = user.isMuted || false;
                 if (user) {
                     getUserById(user.idUser).then(user => {
-                        io.to(socket.id).emit(`receive-user-${peerId}`, user);
+                        io.to(socket.id).emit(`receive-user-${peerId}`, user, isMuted);
                     });
                 } else {
                     console.log("get-user: ", peerId, ", not found user");
                 }
-            })
+            });
 
             socket.on('message', async (message) => {
                 message = {
@@ -152,20 +157,29 @@ io.on("connection", (socket) => {
                 }
                 const newMessage = await getDetailMessage(message);
                 io.to(zoomId).emit('newMessage', newMessage)
-            })
+            });
+
+            socket.on('mute-mic', (peerId, isMuted) => {
+                const user = users[zoomId].find((user) => user.peerId === peerId);
+                user.isMuted = isMuted;
+                io.to(zoomId).emit('user-muted', peerId, isMuted);
+
+            });
+
             socket.on('leave', () => {
                 //console.log("A user left zoom: " + peerId);
                 socket.to(zoomId).emit('user-disconnected', peerId);
                 socket.leave(zoomId);
                 users[zoomId] = users[zoomId].filter(({ idUser }) => idUser !== socket.idUser);
 
-            })
+            });
+
             socket.on('disconnect', () => {
                 //console.log("A user disconnect zoom: " + peerId);
                 io.to(zoomId).emit('user-disconnected', peerId);
                 socket.leave(zoomId);
                 users[zoomId] = users[zoomId].filter(({ idUser }) => idUser !== socket.idUser);
-            })
+            });
         } else {
             io.to(socket.id).emit('403', 'You has already join room in another application!');
         }

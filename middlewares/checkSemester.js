@@ -2,11 +2,14 @@ const { getCurrentSemester } = require('../common/getCurrentSemester');
 const { HttpUnauthorized, HttpNotFound } = require('../utils/errors');
 
 exports.checkSemester = async (req, res, next) => {
-    const currentSemester = await getCurrentSemester();
 
-    // if (!currentCourse._id.equals(subject.idCourse)) {
-    //     return next(new HttpUnauthorized("Subject was out of current course!"));
-    // }
+    if (req.course.config.role === 'private') {
+        const currentSemester = await getCurrentSemester();
+
+        if (!currentSemester._id.equals(course.idSemester)) {
+            return next(new HttpUnauthorized("Course was out of current semester!"));
+        }
+    }
 
     req.currentSemester = currentSemester;
     next();

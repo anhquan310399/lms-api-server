@@ -14,7 +14,9 @@ const classCTL = require("../../controllers/admin/classController");
 const { authAdmin } = require("../../middlewares/auth")
 
 router.get("/statistic/dashboard", authAdmin, catchErrors(adminCTL.getDashBoardStatistic));
-router.get("/statistic/learning", authAdmin, catchErrors(adminCTL.getLearningResultOfSemester));
+router.get("/statistic/learning/:idSemester", authAdmin, catchErrors(adminCTL.getLearningResultOfSemester));
+router.get("/statistic/faculty/students", authAdmin, catchErrors(adminCTL.getStudentsOfFacultyStatistic));
+router.get("/statistic/semester/courses", authAdmin, catchErrors(adminCTL.getCoursesOpenInSemesterStatistic));
 
 /**
  * Route for curriculum controller

@@ -5,10 +5,12 @@ const User = mongoose.model(schemaTitle.USER);
 const Faculty = mongoose.model(schemaTitle.FACULTY);
 const Classes = mongoose.model(schemaTitle.CLASS);
 const Curriculum = mongoose.model(schemaTitle.CURRICULUM);
+const Semester = mongoose.model(schemaTitle.SEMESTER);
 const DETAILS = require('../../constants/AccountDetail');
 const PRIVILEGES = require('../../constants/PrivilegeCode');
-const STATUS = require('../../constants/AccountStatus');
 const moment = require('moment');
+
+const { HttpNotFound } = require('../../utils/errors');
 
 const _ = require('lodash');
 
@@ -51,14 +53,13 @@ exports.getDashBoardStatistic = async (req, res) => {
         });
     const currentSemester = await getCurrentSemester();
 
-    const publicSubjects = (await Course.find({
-        idSemester: currentSemester._id,
+    const publicSubjects = await Course.countDocuments({
         'config.role': 'public'
-    })).length;
-    const privateSubjects = (await Course.find({
+    });
+    const privateSubjects = await Course.countDocuments({
         idSemester: currentSemester._id,
         'config.role': 'private'
-    })).length;
+    });
 
     res.json({
         newUsers,
@@ -81,7 +82,11 @@ exports.getDashBoardStatistic = async (req, res) => {
 
 exports.getLearningResultOfSemester = async (req, res) => {
 
-    const semester = await getCurrentSemester();
+    const semester = await Semester.findById(req.params.idSemester);
+
+    if (!semester) {
+        throw new HttpNotFound('Not found this semester')
+    }
 
     const learningResults = await getLearningResult(semester);
 
@@ -98,6 +103,71 @@ exports.getLearningResultOfSemester = async (req, res) => {
 
     res.json({
         result: learningResults, statistic
+    })
+}
+
+exports.getStudentsOfFacultyStatistic = async (req, res) => {
+    const faculties = await Faculty.find({}, 'name');
+
+    const statistic = await Promise.all(faculties.map(async (faculty) => {
+
+        const curriculums = await Curriculum.find({
+            idFaculty: faculty._id
+        }, 'code');
+
+        const studentQuantities = await curriculums.reduce(async (result, currentCurriculum) => {
+
+            const classes = await Classes.find({ idCurriculum: currentCurriculum._id });
+
+            const students = await classes.reduce(async (amount, currentClass) => {
+                return (await amount) + currentClass.students.length;
+            }, 0);
+
+            return (await result) + students;
+        }, 0)
+
+        return {
+            faculty: faculty.name,
+            students: studentQuantities
+        };
+    }));
+
+    const registers = await User.countDocuments({
+        idPrivilege: PRIVILEGES.REGISTER
+    });
+
+    statistic.push({
+        faculty: 'Đăng ký',
+        students: registers
+    })
+
+
+    res.json({
+        statistic
+    })
+}
+
+exports.getCoursesOpenInSemesterStatistic = async (req, res) => {
+
+    const semesters = (await Semester.find({})
+        .sort({ createdAt: -1 })
+        .limit(3)).reverse();
+
+    const statistic = await Promise.all(semesters.map(async (semester) => {
+
+
+        const courses = await Course.countDocuments({
+            idSemester: semester._id
+        })
+
+        return {
+            semester: semester.name,
+            courses: courses
+        };
+    }));
+
+    res.json({
+        statistic
     })
 }
 
@@ -130,7 +200,6 @@ const getCourseResultOfStudent = async (course, idStudent) => {
         return 0;
     }
 }
-
 
 const getLearningResult = async (semester) => {
     const faculties = await Faculty.find({}, 'name');
@@ -185,7 +254,7 @@ const getLearningResult = async (semester) => {
 
     const data = [].concat.apply([], learningResults);
 
-    const sorted = _.sortBy(data, ["faculty", "class", "gpa", "lastName"]);
+    const sorted = _.sortBy(data, ["faculty", "class", "code"]);
 
     return sorted;
 }

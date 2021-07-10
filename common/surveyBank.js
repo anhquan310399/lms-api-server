@@ -7,7 +7,7 @@ const questions = [
             "Không đồng ý",
             "Phân vân",
             "Đồng ý",
-            "Hoàn toàn không đồng ý"
+            "Hoàn toàn đồng ý"
         ],
         "typeQuestion": "choice"
     },
@@ -19,7 +19,7 @@ const questions = [
             "Không đồng ý",
             "Phân vân",
             "Đồng ý",
-            "Hoàn toàn không đồng ý"
+            "Hoàn toàn đồng ý"
         ],
         "typeQuestion": "choice"
     },
@@ -31,7 +31,7 @@ const questions = [
             "Không đồng ý",
             "Phân vân",
             "Đồng ý",
-            "Hoàn toàn không đồng ý"
+            "Hoàn toàn đồng ý"
         ],
         "typeQuestion": "choice"
     },
@@ -43,7 +43,7 @@ const questions = [
             "Không đồng ý",
             "Phân vân",
             "Đồng ý",
-            "Hoàn toàn không đồng ý"
+            "Hoàn toàn đồng ý"
         ],
         "typeQuestion": "choice"
     },
@@ -55,7 +55,7 @@ const questions = [
             "Không đồng ý",
             "Phân vân",
             "Đồng ý",
-            "Hoàn toàn không đồng ý"
+            "Hoàn toàn đồng ý"
         ],
         "typeQuestion": "choice"
     },
@@ -67,7 +67,7 @@ const questions = [
             "Không đồng ý",
             "Phân vân",
             "Đồng ý",
-            "Hoàn toàn không đồng ý"
+            "Hoàn toàn đồng ý"
         ],
         "typeQuestion": "choice"
     },
@@ -79,7 +79,7 @@ const questions = [
             "Không đồng ý",
             "Phân vân",
             "Đồng ý",
-            "Hoàn toàn không đồng ý"
+            "Hoàn toàn đồng ý"
         ],
         "typeQuestion": "choice"
     },
@@ -91,7 +91,7 @@ const questions = [
             "Không đồng ý",
             "Phân vân",
             "Đồng ý",
-            "Hoàn toàn không đồng ý"
+            "Hoàn toàn đồng ý"
         ],
         "typeQuestion": "choice"
     },
@@ -103,7 +103,7 @@ const questions = [
             "Không đồng ý",
             "Phân vân",
             "Đồng ý",
-            "Hoàn toàn không đồng ý"
+            "Hoàn toàn đồng ý"
         ],
         "typeQuestion": "choice"
     },

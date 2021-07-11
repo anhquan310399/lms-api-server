@@ -332,7 +332,7 @@ exports.viewAllResponse = async (req, res) => {
             })
         }
         return {
-            question: question.question,
+            content: question.content,
             typeQuestion: question.typeQuestion,
             answer: answer
         };

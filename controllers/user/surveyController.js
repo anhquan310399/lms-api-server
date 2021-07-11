@@ -154,6 +154,17 @@ exports.update = async (req, res) => {
 
     survey.isDeleted = data.isDeleted;
 
+    if (data.questions) {
+
+        if (survey.responses.length > 0) {
+            throw new HttpBadRequest(SurveyResponseMessages.SURVEY_HAS_RESPONSES);
+        }
+
+        const questionnaire = await createQuestionnaire(data.questions);
+
+        survey.questionnaire = questionnaire;
+    }
+
     await course.save();
 
     res.json({

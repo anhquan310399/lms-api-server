@@ -248,7 +248,8 @@ const ClientResponsesMessages = {
         SURVEY_ALREADY_REPLIED: `You have already replied this survey`,
         REPLY_SURVEY_SUCCESS: `Reply survey successfully!`,
         SURVEY_NOT_REPLIED: `You have not already replied this survey`,
-        QUESTIONS_NOT_VALID: `Questions of survey are invalid!`
+        QUESTIONS_NOT_VALID: `Questions of survey are invalid!`,
+        SURVEY_HAS_RESPONSES: `Survey has responses. Can't update`
     },
     QuizBankResponseMessages: {
         NOT_FOUND_CHAPTER: 'Not found questionnaire',

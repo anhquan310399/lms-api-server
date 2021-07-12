@@ -41,7 +41,7 @@ exports.create = async (req, res) => {
         code: code,
         config: {
             role: 'public',
-            acceptEnroll: data.config.acceptEnroll
+            acceptEnroll: true
         },
         idTeacher: req.teacher._id,
     });

@@ -44,7 +44,8 @@ router.post('/:idCourse/deny-enroll', authTeacherInCourse, checkSemester, catchE
 //Route import, export
 router.post('/:idCourse/export', authTeacherInCourse, catchErrors(controller.exportQuizBank));
 router.post('/:idCourse/import', authTeacherInCourse, catchErrors(controller.importQuizBank));
-router.post('/:idCourse/clone', authTeacherInCourse, catchErrors(controller.getCloneOfAnotherCourse));
+router.post('/:idCourse/clone', authTeacherInCourse, catchErrors(controller.cloneExistedCourse));
+router.get('/:idCourse/clone', authTeacherInCourse, catchErrors(controller.getAllCloneCourse));
 
 //Route list student in course
 router.get('/:idCourse/students', authInCourse, catchErrors(controller.getListStudent));

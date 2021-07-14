@@ -667,7 +667,7 @@ exports.exportQuizBank = async (req, res) => {
     res.send(course)
 }
 
-exports.getCloneOfAnotherCourse = async (req, res) => {
+exports.cloneExistedCourse = async (req, res) => {
     const course = req.course;
 
     const clone = await Course.findById(req.body.cloneId);
@@ -698,6 +698,23 @@ exports.getCloneOfAnotherCourse = async (req, res) => {
         }))
     });
 }
+
+exports.getAllCloneCourse = async (req, res) => {
+    const course = req.course;
+
+    const courses = await Course.find({
+        idSubject: course.idSubject,
+        _id: {
+            $ne: course._id
+        },
+        idTeacher: req.teacher._id
+    }, 'name code');
+    res.json({
+        success: true,
+        courses,
+    });
+}
+
 
 //Get Deadline
 exports.getDeadline = async (req, res) => {

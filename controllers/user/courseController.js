@@ -675,13 +675,17 @@ exports.cloneExistedCourse = async (req, res) => {
         throw new HttpNotFound(CourseResponseMessages.COURSE_NOT_FOUND);
     }
 
+    if(course.timelines.length > 0 ){
+        throw new HttpUnauthorized(CourseResponseMessages.COURSE_HAS_TIMELINES);
+    }
+
     const quizBank = await getQuizBankExport(clone.quizBank);
 
     const timelines = await getTimelineExport(clone.timelines);
 
     course.quizBank = course.quizBank.concat(quizBank);
 
-    course.timelines = course.quizBank.concat(timelines);
+    course.timelines = course.timelines.concat(timelines);
 
     await course.save();
 

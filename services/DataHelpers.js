@@ -230,13 +230,15 @@ const getTimelineExport = async (timelines) => {
                         return answer.content;
                     });
                     return {
-                        question: question.question,
+                        identity:question.identity,
+                        content: question.content,
                         answer: answers,
                         typeQuestion: question.typeQuestion
                     }
                 } else {
                     return {
-                        question: question.question,
+                        identity:question.identity,
+                        content: question.content,
                         typeQuestion: question.typeQuestion
                     }
                 }

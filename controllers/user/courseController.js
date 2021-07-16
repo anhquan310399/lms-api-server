@@ -3,6 +3,7 @@ const schemaTitle = require("../../constants/SchemaTitle");
 const Course = mongoose.model(schemaTitle.COURSE);
 const User = mongoose.model(schemaTitle.USER);
 const Subject = mongoose.model(schemaTitle.SUBJECT);
+const Curriculum = mongoose.model(schemaTitle.CURRICULUM);
 const { HttpNotFound, HttpBadRequest, HttpUnauthorized } = require('../../utils/errors');
 const examStatusCodes = require('../../constants/examStatusCodes');
 const {
@@ -86,14 +87,19 @@ exports.getDetail = async (req, res) => {
 };
 
 exports.findPublicSubject = async (req, res) => {
-    const { idSubject, name } = req.body;
+    const { idCurriculum, name } = req.body;
 
     const page = req.body.page || 1;
-    const size = req.body.size || 10;
+    const size = req.body.pageSize || 20;
+
+    const curriculum = await Curriculum.findById(idCurriculum, "subjects");
+    if (!curriculum) {
+        throw new HttpNotFound(CourseResponseMessages.CURRICULUM_NOT_FOUND);
+    }
 
     const searches = await Course.find({
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
-        idSubject: idSubject,
+        idSubject: { $nin: curriculum.subjects },
         'config.role': 'public',
         isDeleted: false
     }, "code name idTeacher").skip((page - 1) * size).limit(size);

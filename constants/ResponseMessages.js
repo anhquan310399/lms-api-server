@@ -172,6 +172,7 @@ const ClientResponsesMessages = {
         ADJUST_INDEX_TIMELINES_SUCCESS: 'Adjust index of timeline successfully!',
         COURSE_HAS_TIMELINES: 'Course already has data. Cant not import new data',
         IMPORT_DATA_SUCCESS: 'Import data to course successfully!',
+        CURRICULUM_NOT_FOUND: 'Not found this curriculum',
     },
     TimelineResponseMessages: {
         CREATE_SUCCESS: 'Create timeline successfully!',

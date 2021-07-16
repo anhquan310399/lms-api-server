@@ -16,7 +16,7 @@ router.post('/', authTeacher, catchErrors(controller.create));
 //Route find all courses
 router.get('/', authUser, catchErrors(controller.getAllEnrolledCourses));
 //Route get all public course
-router.post('/public', authUser, catchErrors(controller.findPublicSubject));
+router.post('/filter', authUser, catchErrors(controller.findPublicSubject));
 
 //Route deadline
 router.get('/deadline', authStudent, catchErrors(controller.getDeadline));

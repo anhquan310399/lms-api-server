@@ -32,7 +32,7 @@ const config = new mongoose.Schema({
     },
     acceptEnroll: {
         type: Boolean,
-        default: false
+        default: true
     }
 }, { _id: false })
 

@@ -176,7 +176,7 @@ exports.getEnrollRequests = async (req, res) => {
 }
 
 exports.enrollSubject = async (req, res) => {
-    const course = await Course.findById(req.params.id);
+    const course = await Course.findById(req.params.idCourse);
     if (!course) {
         throw new HttpNotFound(CourseResponseMessages.COURSE_NOT_FOUND);
     }

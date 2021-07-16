@@ -106,7 +106,7 @@ exports.findPublicSubject = async (req, res) => {
 
     const total = await Course.countDocuments({
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
-        idSubject: idSubject,
+        idSubject: { $nin: curriculum.subjects },
         'config.role': 'public',
         isDeleted: false
     });

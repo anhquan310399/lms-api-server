@@ -112,7 +112,6 @@ exports.update = async (req, res) => {
     course.name = req.body.name;
     course.config = req.body.config;
     course.idSemester = req.body.idSemester;
-    course.idSubject = req.body.idSubject;
     course.idTeacher = req.body.idTeacher;
 
     await course.save();

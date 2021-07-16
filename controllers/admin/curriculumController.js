@@ -61,7 +61,8 @@ exports.create = async (req, res) => {
     const data = new Curriculum({
         name: req.body.name,
         code: req.body.code,
-        idFaculty: req.body.idFaculty
+        idFaculty: req.body.idFaculty,
+        subjects: req.body.subjects
     });
 
     const curriculum = await data.save();

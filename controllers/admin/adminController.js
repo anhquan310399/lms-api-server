@@ -192,7 +192,7 @@ const getCourseResultOfStudent = async (course, idStudent) => {
 
     }));
 
-    const total = grade.reduce((a, b) => a + b);
+    const total = grade.reduce((a, b) => a + b, 0);
 
     if (totalRatio) {
         return (total / totalRatio).toFixed(2);

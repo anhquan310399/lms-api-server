@@ -99,14 +99,14 @@ exports.findPublicSubject = async (req, res) => {
 
     const searches = await Course.find({
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
-        idSubject: { $nin: curriculum.subjects },
+        idSubject:  { $in: curriculum.subjects },
         'config.role': 'public',
         isDeleted: false
     }, "code name idTeacher").skip((page - 1) * size).limit(size);
 
     const total = await Course.countDocuments({
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
-        idSubject: { $nin: curriculum.subjects },
+        idSubject: { $in: curriculum.subjects },
         'config.role': 'public',
         isDeleted: false
     });

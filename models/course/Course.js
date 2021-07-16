@@ -121,7 +121,6 @@ const Schema = mongoose.Schema({
                 const student = await User.findOne({
                     _id: idStudent,
                     idPrivilege: PRIVILEGES.STUDENT || PRIVILEGES.REGISTER,
-                    $or: [{ status: STATUS.ACTIVATED }, { status: STATUS.NOT_ACTIVATED }]
                 });
                 if (!student) {
                     throw new ValidatorError({

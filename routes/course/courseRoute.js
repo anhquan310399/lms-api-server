@@ -14,16 +14,16 @@ const { catchErrors } = require("../../handlers/errorHandlers");
 //Create course by lecture
 router.post('/', authTeacher, catchErrors(controller.create));
 //Route find all courses
-router.get('/', authUser, catchErrors(controller.findAll));
+router.get('/', authUser, catchErrors(controller.getAllEnrolledCourses));
 //Route get all public course
-router.get('/public', authUser, catchErrors(controller.findAllPublicSubject));
+router.post('/public', authUser, catchErrors(controller.findPublicSubject));
 
 //Route deadline
 router.get('/deadline', authStudent, catchErrors(controller.getDeadline));
 router.get('/:idCourse/deadline', authStudentInCourse, catchErrors(controller.getDeadlineBySubject));
 
 //Route find course by id
-router.get('/:idCourse', authInCourse, catchErrors(controller.find));
+router.get('/:idCourse', authInCourse, catchErrors(controller.getDetail));
 
 //Route exit course
 router.get('/:idCourse/exit-requests', authTeacherInCourse, catchErrors(controller.getExitRequests));

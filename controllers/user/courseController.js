@@ -55,17 +55,12 @@ exports.create = async (req, res) => {
     });
 };
 
-exports.findAll = async (req, res) => {
-    const idPrivilege = req.user.idPrivilege;
-    let allCourses = [];
-    if (idPrivilege === PRIVILEGES.TEACHER) {
-        allCourses = await Course.find({ idTeacher: req.user._id, isDeleted: false }, "name");
-    } else {
-        const courses = await Course.find({ 'studentIds': req.user._id, isDeleted: false })
-        allCourses = await Promise.all(courses.map(async (value) => {
-            const teacher = await getUserById(value.idTeacher, DETAILS.COMMON);
-            return { _id: value._id, name: value.name, teacher: teacher };
-        }));
+exports.getAllEnrolledCourses = async (req, res) => {
+    const privateCourses = await Course.find({ $or: [{ idTeacher: req.user._id }, { 'studentIds': req.user._id }], isDeleted: false, 'config.role': 'private' }, "code name");
+    const publicCourses = await Course.find({ $or: [{ idTeacher: req.user._id }, { 'studentIds': req.user._id }], isDeleted: false, 'config.role': 'public' }, "code name");
+    const allCourses = {
+        private: privateCourses,
+        public: publicCourses
     }
 
     res.json({
@@ -74,7 +69,7 @@ exports.findAll = async (req, res) => {
     });
 };
 
-exports.find = async (req, res) => {
+exports.getDetail = async (req, res) => {
     const course = req.course;
     let timelines = req.course.timelines;
     timelines = await filterAndSortTimelines(timelines, req.user.idPrivilege === PRIVILEGES.TEACHER ? false : true);
@@ -90,16 +85,35 @@ exports.find = async (req, res) => {
     });
 };
 
-exports.findAllPublicSubject = async (req, res) => {
-    const course = await Course.find({ 'config.role': 'public', isDeleted: false })
-    const allCourses = await Promise.all(course.map(async (value) => {
+exports.findPublicSubject = async (req, res) => {
+    const { idSubject, name } = req.body;
+
+    const page = req.body.page || 1;
+    const size = req.body.size || 10;
+
+    const searches = await Course.find({
+        name: { $regex: new RegExp(name.toLowerCase(), "i") },
+        idSubject: idSubject,
+        'config.role': 'public',
+        isDeleted: false
+    }, "code name idTeacher").skip((page - 1) * size).limit(size);
+
+    const total = await Course.countDocuments({
+        name: { $regex: new RegExp(name.toLowerCase(), "i") },
+        idSubject: idSubject,
+        'config.role': 'public',
+        isDeleted: false
+    });
+
+    const courses = await Promise.all(searches.map(async (value) => {
         const teacher = await getUserById({ _id: value.idTeacher }, DETAILS.COMMON)
         return { _id: value._id, name: value.name, teacher: teacher };
     }));
 
     res.json({
         success: true,
-        allCourses: allCourses
+        courses: courses,
+        total
     });
 }
 
@@ -675,7 +689,7 @@ exports.cloneExistedCourse = async (req, res) => {
         throw new HttpNotFound(CourseResponseMessages.COURSE_NOT_FOUND);
     }
 
-    if(course.timelines.length > 0 ){
+    if (course.timelines.length > 0) {
         throw new HttpUnauthorized(CourseResponseMessages.COURSE_HAS_TIMELINES);
     }
 
@@ -718,7 +732,6 @@ exports.getAllCloneCourse = async (req, res) => {
         courses,
     });
 }
-
 
 //Get Deadline
 exports.getDeadline = async (req, res) => {

@@ -45,6 +45,7 @@ exports.createChatroom = async (req, res) => {
             _id: room._id,
             name: user.firstName + " " + user.lastName,
             image: user.urlAvatar,
+            idUser: user._id
         }
     });
 };
@@ -59,6 +60,7 @@ exports.getAllChatrooms = async (req, res) => {
             _id: room._id,
             name: user.firstName + " " + user.lastName,
             image: user.urlAvatar,
+            idUser: user._id
             // message: message ? message.message : ""
         }
     }))

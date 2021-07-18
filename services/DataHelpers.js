@@ -230,14 +230,14 @@ const getTimelineExport = async (timelines) => {
                         return answer.content;
                     });
                     return {
-                        identity:question.identity,
+                        identity: question.identity,
                         content: question.content,
                         answer: answers,
                         typeQuestion: question.typeQuestion
                     }
                 } else {
                     return {
-                        identity:question.identity,
+                        identity: question.identity,
                         content: question.content,
                         typeQuestion: question.typeQuestion
                     }
@@ -333,7 +333,8 @@ const getDeadlineOfCourse = (course, student) => {
                 }
                 var submission = currentExam.submissions.find(value => value.idStudent.equals(student._id))
                 let exam = {
-                    idSubject: course._id,
+                    idCourse: course._id,
+                    courseName:course.name,
                     idTimeline: timeline._id,
                     _id: currentExam._id,
                     name: currentExam.name,
@@ -350,7 +351,8 @@ const getDeadlineOfCourse = (course, student) => {
                 }
                 let submission = currentAssignment.submissions.find(value => value.idStudent.equals(student._id));
                 let assignment = {
-                    idSubject: course._id,
+                    idCourse: course._id,
+                    courseName:course.name,
                     idTimeline: timeline._id,
                     _id: currentAssignment._id,
                     name: currentAssignment.name,
@@ -363,17 +365,18 @@ const getDeadlineOfCourse = (course, student) => {
             }, []);
 
             let surveys = timeline.surveys.reduce((preSurveys, currentSurvey) => {
-                if (currentSurvey.expireTime.getTime() < today || currentSurvey.isDeleted) {
+                if (currentSurvey.setting.expireTime.getTime() < today || currentSurvey.isDeleted) {
                     return preSurveys;
                 }
                 let reply = currentSurvey.responses.find(value => value.idStudent.equals(student._id));
                 let survey = {
-                    idSubject: course._id,
+                    idCourse: course._id,
+                    courseName:course.name,
                     idTimeline: timeline._id,
                     _id: currentSurvey._id,
                     name: currentSurvey.name,
-                    expireTime: currentSurvey.expireTime,
-                    timeRemain: (new Date(currentSurvey.expireTime - today)).getTime(),
+                    expireTime: currentSurvey.setting.expireTime,
+                    timeRemain: (new Date(currentSurvey.setting.expireTime - today)).getTime(),
                     isSubmit: reply ? true : false,
                     type: 'survey'
                 }
@@ -383,7 +386,8 @@ const getDeadlineOfCourse = (course, student) => {
             deadline = deadline.concat(exams, assignments, surveys);
         }
     });
-    return deadline;
+
+    return _.sortBy(deadline, ['expireTime', 'idCourse']);
 }
 
 const getCommonInfoTopic = async (topic) => {

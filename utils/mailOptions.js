@@ -1,7 +1,33 @@
+const handlebars = require('handlebars');
+const fs = require('fs');
+
+const readHTMLFile = function (path, callback) {
+    fs.readFile(path, { encoding: 'utf-8' }, function (err, html) {
+        if (err) {
+            throw err;
+            callback(err);
+        }
+        else {
+            callback(null, html);
+        }
+    });
+};
+
 const MailTemplate = {
     SUBJECT_RESET_PWD: '[Account LMS HCMUTE] - Reset password',
-    BODY_LINK_RESET_PWD(url) {
-        return `Please follow this link to reset your password <a href="${url}">"${url}"</a>`
+    BODY_LINK_RESET_PWD(homeUrl, resetUrl) {
+        return new Promise((resolve, reject) => {
+            readHTMLFile(__dirname + '/mail-templates/reset-password.html', function (err, html) {
+                var template = handlebars.compile(html);
+                var replacements = {
+                    homeUrl: homeUrl,
+                    resetUrl: resetUrl
+                };
+                var htmlToSend = template(replacements);
+                resolve(htmlToSend);
+            });
+        })
+        //return `Please follow this link to reset your password <a href="${url}">"${url}"</a>`
     },
     MAIL_NOTIFY_STUDENT_ENROLL(student, teacher, course) {
         return new MailOptions({

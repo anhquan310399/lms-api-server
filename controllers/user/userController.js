@@ -64,7 +64,7 @@ exports.requestResetPassword = async (req, res) => {
     const mailOptions = new MailOptions({
         subject: MailTemplate.SUBJECT_RESET_PWD,
         to: user.emailAddress,
-        html: MailTemplate.BODY_LINK_RESET_PWD(url)
+        html: await MailTemplate.BODY_LINK_RESET_PWD(req.headers['origin'], url)
     })
 
     const response = await sendMail(mailOptions, true);

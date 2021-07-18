@@ -67,12 +67,12 @@ exports.requestResetPassword = async (req, res) => {
         html: MailTemplate.BODY_LINK_RESET_PWD(url)
     })
 
-    const response = sendMail(mailOptions, true);
+    const response = await sendMail(mailOptions, true);
 
     if (response.status) {
         user.resetToken = { token, date: new Date() };
         await user.save();
-        res.json({
+        return res.json({
             success: true,
             message: UserResponseMessages.REQUEST_RESET_PWD_SUCCESS
         })

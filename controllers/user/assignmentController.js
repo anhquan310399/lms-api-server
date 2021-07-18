@@ -22,7 +22,7 @@ exports.create = async (req, res) => {
             overDueDate: data.setting.isOverDue ? new Date(data.setting.overDueDate) : null,
             fileSize: data.setting.fileSize,
         },
-        attachments: data.file, 
+        attachments: data.file,
         isDeleted: data.isDeleted
     };
     const length = timeline.assignments.push(model);
@@ -245,7 +245,9 @@ exports.submit = async (req, res) => {
         await course.save();
 
         const mailOptions = MailTemplate.MAIL_CONFIRM_SUBMIT_ASSIGNMENT(req.student, assignment, course);
-        sendMail(mailOptions);
+
+        await sendMail(mailOptions);
+
         res.json({
             success: true,
             submission: assignment.submissions[index]
@@ -281,7 +283,7 @@ exports.gradeSubmission = async (req, res) => {
 
     const mailOptions = MailTemplate.MAIL_NOTIFY_SUBMISSION_IS_GRADED(student, assignment, course);
 
-    sendMail(mailOptions);
+    await sendMail(mailOptions);
 
     res.json({
         success: true,

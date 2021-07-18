@@ -99,7 +99,7 @@ exports.findPublicSubject = async (req, res) => {
 
     const searches = await Course.find({
         name: { $regex: new RegExp(name.toLowerCase(), "i") },
-        idSubject:  { $in: curriculum.subjects },
+        idSubject: { $in: curriculum.subjects },
         'config.role': 'public',
         isDeleted: false
     }, "code name idTeacher").skip((page - 1) * size).limit(size);
@@ -245,7 +245,7 @@ exports.acceptEnrollRequest = async (req, res) => {
     //Send email to student
     const student = await getUserById(req.body.idStudent, DETAILS.COMMON)
     const mailOptions = MailTemplate.MAIL_NOTIFY_ENROLL_REQUEST_PROCESS(student, course, true);
-    sendMail(mailOptions);
+    await sendMail(mailOptions);
 
     res.json({
         success: true,
@@ -270,7 +270,7 @@ exports.denyEnrollRequest = async (req, res) => {
 
     const mailOptions = MailTemplate.MAIL_NOTIFY_ENROLL_REQUEST_PROCESS(student, course, false);
 
-    sendMail(mailOptions);
+    await sendMail(mailOptions);
 
     res.json({
         success: true,
@@ -340,7 +340,7 @@ exports.acceptExitRequest = async (req, res) => {
     //Send email to student
     const student = await getUserById(req.body.idStudent, DETAILS.COMMON)
     const mailOptions = MailTemplate.MAIL_NOTIFY_EXIT_COURSE_PROCESS(student, course, true);
-    sendMail(mailOptions);
+    await sendMail(mailOptions);
 
     res.json({
         success: true,
@@ -364,7 +364,7 @@ exports.denyExitRequest = async (req, res) => {
 
     const mailOptions = MailTemplate.MAIL_NOTIFY_EXIT_COURSE_PROCESS(student, course, false);
 
-    sendMail(mailOptions);
+    await sendMail(mailOptions);
 
     res.json({
         success: true,

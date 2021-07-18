@@ -15,28 +15,28 @@ const transporter = nodemailer.createTransport(smtpTransport({
 }));
 
 const sendMail = (mailOptions, force = false) => {
-    let status = false;
-    let message = "";
-    User.findOne({ emailAddress: mailOptions.to },
-        'emailAddress isNotify')
-        .then(to => {
-            if (to.isNotify || force) {
-                transporter.sendMail(mailOptions, function (error, info) {
-                    if (error) {
-                        console.log(error);
-                        message = error.message;
-                    } else {
-                        status = true;
-                        console.log('Email sent: ' + info.response);
-                    }
-                });
-            }
-        })
-        .catch(error => {
-            console.log(error);
-            message = error.message;
-        });
-    return { status, message };
+    return new Promise((resolve, reject) => {
+        User.findOne({ emailAddress: mailOptions.to },
+            'emailAddress isNotify')
+            .then(async (to) => {
+                if (to.isNotify || force) {
+                    await transporter.sendMail(mailOptions, function (error, info) {
+                        if (error) {
+                            console.log(error);
+                            resolve({ status: false, message: error.message });
+                        } else {
+                            status = true;
+                            console.log('Email sent: ' + info.response);
+                            resolve({ status: true });
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.log(error);
+                resolve({ status: false, message: error.message });
+            })
+    })
 }
 
 module.exports = {

@@ -254,7 +254,7 @@ const getLearningResult = async (semester) => {
 
     const data = [].concat.apply([], learningResults);
 
-    const sorted = _.sortBy(data, ["faculty", "class", "code"]);
+    const sorted = _.sortBy(data, ["faculty", "class", "lastName", "code"]);
 
     return sorted;
 }

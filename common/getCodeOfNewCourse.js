@@ -9,7 +9,8 @@ const getCodeOfNewCourse = async (subject) => {
     let code = semester.name + "_" + subject.code + "_Group_";
 
     const total = await Course.countDocuments({
-        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") }
+        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
+        idSemester: { $ne: semester._id }
     });
 
     code += (total + 1);
@@ -25,7 +26,7 @@ const getPublicCodeOfNewCourse = async (subject) => {
     let code = semester.name + "_" + subject.code + "_Public_";
 
     const total = await Course.countDocuments({
-        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") }
+        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
     });
 
     code += (total + 1);

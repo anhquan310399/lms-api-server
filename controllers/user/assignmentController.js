@@ -271,6 +271,7 @@ exports.gradeSubmission = async (req, res) => {
     if (!submitted) {
         throw new HttpNotFound(AssignResponseMessages.NOT_FOUND_SUBMISSION);
     }
+
     submitted.feedBack = {
         grade: req.body.grade,
         gradeOn: new Date(),

@@ -184,7 +184,7 @@ exports.getAllStudents = async (req, res) => {
 
     res.json({
         success: true,
-        students
+        students: _.sortBy(students, ['lastName','code'])
     })
 }
 

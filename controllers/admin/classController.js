@@ -9,6 +9,7 @@ const { ClassResponseMessages } = AdminResponseMessages;
 const PRIVILEGES = require('../../constants/PrivilegeCode');
 const STATUS = require('../../constants/AccountStatus');
 const DETAILS = require('../../constants/AccountDetail');
+const _ = require('lodash');
 
 const findClassById = async (id) => {
     const cls = await Classes.findById(id);
@@ -122,12 +123,17 @@ exports.addStudents = async (req, res) => {
         return exist._id;
     }));
 
+    (await User.find()).forEach(async (user) => {
+        user.isNotify = false;
+        await user.save();
+    })
+
     await Promise.all(ids.map(async (idStudent) => {
         const exist = await Classes.find({
-            _id: { $ne: cls._id },
-            'students': idStudent
+            'students': idStudent,
         });
-        if (exist) {
+
+        if (exist.length > 0) {
             throw new HttpBadRequest(ClassResponseMessages.STUDENT_IN_ANOTHER_CLASS);
         }
     }));
@@ -135,8 +141,6 @@ exports.addStudents = async (req, res) => {
     ids = cls.students.concat(ids);
 
     ids = ids.filter((a, b) => ids.indexOf(a) === b);
-
-    cls.students = ids;
 
     await cls.save();
 
@@ -196,6 +200,6 @@ exports.getAllStudents = async (req, res) => {
 
     res.json({
         success: true,
-        students
+        students: _.sortBy(students, ['lastName','code'])
     })
 }

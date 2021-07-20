@@ -69,7 +69,7 @@ const UserSchema = mongoose.Schema({
     facebookId: String,
     isNotify: {
         type: Boolean,
-        default: true
+        default: false
     },
     status: {
         type: String,

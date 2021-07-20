@@ -31,6 +31,9 @@ const sendMail = (mailOptions, force = false) => {
                         }
                     });
                 }
+                else {
+                    resolve({ status: true });
+                }
             })
             .catch(error => {
                 console.log(error);

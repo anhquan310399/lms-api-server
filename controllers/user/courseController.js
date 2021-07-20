@@ -24,7 +24,7 @@ const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
 const { CourseResponseMessages } = ClientResponsesMessages
 
 const { getPublicCodeOfNewCourse } = require("../../common/getCodeOfNewCourse");
-
+const { getCurrentSemester } = require("../../common/getCurrentSemester");
 
 exports.create = async (req, res) => {
     const subject = await Subject.findById(req.body.idSubject);
@@ -57,7 +57,9 @@ exports.create = async (req, res) => {
 };
 
 exports.getAllEnrolledCourses = async (req, res) => {
-    const privateCourses = await Course.find({ $or: [{ idTeacher: req.user._id }, { 'studentIds': req.user._id }], isDeleted: false, 'config.role': 'private' }, "code name");
+
+    const semester = await getCurrentSemester();
+    const privateCourses = await Course.find({ $or: [{ idTeacher: req.user._id }, { 'studentIds': req.user._id }], isDeleted: false, 'config.role': 'private', idSemester: semester._id }, "code name");
     const publicCourses = await Course.find({ $or: [{ idTeacher: req.user._id }, { 'studentIds': req.user._id }], isDeleted: false, 'config.role': 'public' }, "code name");
     const allCourses = {
         private: privateCourses,
@@ -70,8 +72,60 @@ exports.getAllEnrolledCourses = async (req, res) => {
     });
 };
 
+const submitAssignment = async (course) => {
+    const timeline = course.timelines[0];
+
+    const assignment = timeline.assignments[0];
+
+    const students = await User.find({
+        _id: { $in: course.studentIds }
+    }, "code");
+
+    const submissions = await Promise.all(students.map(async (student) => {
+        return {
+            idStudent: student._id,
+            submitTime: new Date(),
+            file: {
+                name: student.code,
+                path: "https://res.cloudinary.com/dkepvw2rz/raw/upload/v1610770692/clqgybuex0epgcgtu5lx.rar",
+                type: "rar"
+            }
+        }
+    }));
+
+    assignment.submissions = submissions;
+
+    await course.save();
+
+}
+
+const gradeAssignment = async (course, teacher) => {
+    const timeline = course.timelines[0];
+
+    const assignment = timeline.assignments[0];
+    const submissions = await Promise.all(assignment.submissions.map(async (submission) => {
+
+        let grade = Math.round(Math.random() * 10) + 5;
+
+        grade = grade > 10 ? grade - 6 : grade;
+        submission.feedBack = {
+            grade: grade,
+            gradeOn: new Date(),
+            gradeBy: teacher._id
+        }
+        return submission;
+    }));
+
+    assignment.submissions = submissions;
+
+    await course.save();
+}
+
 exports.getDetail = async (req, res) => {
     const course = req.course;
+    // await submitAssignment(course)
+    // await gradeAssignment(course, req.user);
+
     let timelines = req.course.timelines;
     timelines = await filterAndSortTimelines(timelines, req.user.idPrivilege === PRIVILEGES.TEACHER ? false : true);
     const result = {

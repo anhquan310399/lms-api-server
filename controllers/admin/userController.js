@@ -20,6 +20,34 @@ const findUserById = async (id) => {
     return user;
 }
 
+const filterUsers = async (req, privilege) => {
+    const page = parseInt(req.body.page);
+    const size = parseInt(req.body.size);
+    const status = req.body.status ?
+        [{ status: req.body.status }] :
+        [{ status: STATUS.ACTIVATED },
+        { status: STATUS.NOT_ACTIVATED },
+        { status: STATUS.SUSPENDED }];
+    const code = req.body.code || "";
+
+    const users = await User.find({
+        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
+        idPrivilege: privilege,
+        $or: status
+    },
+        DETAILS.CONFIG_ADMIN).skip((page - 1) * size).limit(size);
+    const total = await User.countDocuments({
+        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
+        idPrivilege: privilege,
+        $or: status
+    });
+
+    return {
+        total,
+        users
+    }
+}
+
 exports.create = async (req, res) => {
     const data = new User({
         code: req.body.code,
@@ -64,86 +92,37 @@ exports.findAllTeachers = async (req, res) => {
 };
 
 exports.filterStudents = async (req, res) => {
-    const page = parseInt(req.body.page);
-    const size = parseInt(req.body.size);
-    const status = req.body.status ?
-        [{ status: req.body.status }] :
-        [{ status: STATUS.ACTIVATED },
-        { status: STATUS.NOT_ACTIVATED },
-        { status: STATUS.SUSPENDED }];
-    const code = req.body.code || "";
-
-    const students = await User.find({
-        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
-        idPrivilege: PRIVILEGES.STUDENT,
-        $or: status
-    },
-        DETAILS.CONFIG_ADMIN).skip((page - 1) * size).limit(size);
-    const total = await User.countDocuments({
-        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
-        idPrivilege: PRIVILEGES.STUDENT,
-        $or: status
-    });
+    const { users, total } = await filterUsers(req, PRIVILEGES.STUDENT)
     res.json({
         success: true,
-        users: students,
+        users,
         total
     });
 };
 
 exports.filterTeachers = async (req, res) => {
-    const page = parseInt(req.body.page);
-    const size = parseInt(req.body.size);
-    const status = req.body.status ?
-        [{ status: req.body.status }] :
-        [{ status: STATUS.ACTIVATED },
-        { status: STATUS.NOT_ACTIVATED },
-        { status: STATUS.SUSPENDED }];
-    const code = req.body.code || "";
-
-    const teachers = await User.find({
-        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
-        idPrivilege: PRIVILEGES.TEACHER,
-        $or: status
-    },
-        DETAILS.CONFIG_ADMIN).skip((page - 1) * size).limit(size);
-    const total = await User.countDocuments({
-        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
-        idPrivilege: PRIVILEGES.TEACHER,
-        $or: status
-    });
-
+    const { users, total } = await filterUsers(req, PRIVILEGES.TEACHER)
     res.json({
         success: true,
-        users: teachers,
+        users,
         total
     });
 };
 
 exports.filterRegisters = async (req, res) => {
-    const page = parseInt(req.body.page);
-    const size = parseInt(req.body.size);
-    const status = req.body.status ?
-        [{ status: req.body.status }] :
-        [{ status: STATUS.ACTIVATED },
-        { status: STATUS.NOT_ACTIVATED },
-        { status: STATUS.SUSPENDED }];
-    const code = req.body.code || "";
-
-    const registers = await User.find({
-        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
-        idPrivilege: PRIVILEGES.REGISTER,
-        $or: status
-    },
-        DETAILS.CONFIG_ADMIN).skip((page - 1) * size).limit(size);
-    const total = await User.countDocuments({
-        code: { $regex: new RegExp("^" + code.toLowerCase(), "i") },
-        idPrivilege: PRIVILEGES.REGISTER,
-        $or: status
-    });
+    const { users, total } = await filterUsers(req, PRIVILEGES.REGISTER)
     res.json({
         success: true,
-        users: registers,
+        users,
+        total
+    });
+};
+
+exports.filterAdministrators = async (req, res) => {
+    const { users, total } = await filterUsers(req, PRIVILEGES.ADMIN)
+    res.json({
+        success: true,
+        users,
         total
     });
 };

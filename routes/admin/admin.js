@@ -106,6 +106,7 @@ router.get('/user/teacher', authAdmin, catchErrors(userCTL.findAllTeachers));
 router.post('/user/teacher', authAdmin, catchErrors(userCTL.filterTeachers));
 router.post('/user/student', authAdmin, catchErrors(userCTL.filterStudents));
 router.post('/user/register', authAdmin, catchErrors(userCTL.filterRegisters));
+router.post('/user/admin', authAdmin, catchErrors(userCTL.filterAdministrators));
 router.get('/user/:code', authAdmin, catchErrors(userCTL.findUser));
 router.get('/user/', authAdmin, catchErrors(userCTL.findAll));
 router.post('/user/', authAdmin, catchErrors(userCTL.create));

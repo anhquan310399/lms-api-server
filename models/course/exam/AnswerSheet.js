@@ -39,7 +39,10 @@ const studentAnswerSheet = new mongoose.Schema({
 
 studentAnswerSheet.pre('save', async function (next) {
     const answerSheet = this;
-    if (!answerSheet.isNew && answerSheet.isModified('answers')) {
+
+    const testFlag= false;
+    
+    if ((!answerSheet.isNew && answerSheet.isModified('answers')) || testFlag) {
 
         const exam = answerSheet.parent();
 

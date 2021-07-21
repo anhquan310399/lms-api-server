@@ -26,6 +26,8 @@ const { CourseResponseMessages } = ClientResponsesMessages
 const { getPublicCodeOfNewCourse } = require("../../common/getCodeOfNewCourse");
 const { getCurrentSemester } = require("../../common/getCurrentSemester");
 
+const { findChapterOfQuizBank } = require('../../services/FindHelpers');
+
 exports.create = async (req, res) => {
     const subject = await Subject.findById(req.body.idSubject);
 
@@ -121,10 +123,109 @@ const gradeAssignment = async (course, teacher) => {
     await course.save();
 }
 
+const doQuiz = async (course) => {
+    const timeline = course.timelines[0];
+
+    const exam = timeline.exams[0];
+
+    let questions = exam.setting.questionnaires.reduce((result, questionnaire) => {
+        const chapter = findChapterOfQuizBank(course, questionnaire.id);
+
+        const questions = _.sampleSize(chapter.questions, questionnaire.questionCount)
+            .map(question => {
+                return {
+                    _id: question._id,
+                    question: question.question,
+                    typeQuestion: question.typeQuestion,
+                    answers: question.answers
+                }
+            });
+        return result.concat(questions);
+    }, []);
+
+    questions = _.sampleSize(questions, questions.length);
+
+    const students = await User.find({
+        _id: { $in: course.studentIds }
+    }, "code");
+
+    const submissions = await Promise.all(students.map(async (student) => {
+
+        const answers = await Promise.all(questions.map(async (question) => {
+            const random = Math.round(Math.random() * 100) % 4;
+
+            const isTrue = Math.round(Math.random() * 100) > 30;
+            let idAnswer;
+            if (isTrue) {
+                idAnswer = question.answers.find(value => value.isCorrect)._id;
+            } else {
+                idAnswer = question.answers[random]._id;
+            }
+
+            return {
+                idQuestion: question._id,
+                idAnswer: idAnswer,
+            }
+        }))
+
+        const submission = {
+            idStudent: student._id,
+            answers,
+            startTime: new Date()
+        }
+        return submission;
+    }));
+
+    exam.submissions = submissions;
+
+    await course.save();
+
+}
+
+const doSurvey = async (course) => {
+    const timeline = course.timelines[0];
+
+    const survey = timeline.surveys[0];
+
+    const questions = survey.questionnaire;
+
+    const students = await User.find({
+        _id: { $in: course.studentIds }
+    }, "code");
+
+    const responses = await Promise.all(students.map(async (student) => {
+
+        const answers = await Promise.all(questions.map(async (question) => {
+            const random = Math.round(Math.random() * 100) % 3;
+
+            return {
+                idQuestion: question._id,
+                answer: question.answer[random + 2]._id,
+            }
+        }));
+
+
+        const reply = {
+            idStudent: student._id,
+            answerSheet: answers,
+            timeResponse: new Date()
+        }
+
+        return reply;
+    }));
+
+    survey.responses = responses;
+
+    await course.save();
+
+}
+
 exports.getDetail = async (req, res) => {
     const course = req.course;
     // await submitAssignment(course)
     // await gradeAssignment(course, req.user);
+    // await doQuiz(course);
+    // await doSurvey(course);
 
     let timelines = req.course.timelines;
     timelines = await filterAndSortTimelines(timelines, req.user.idPrivilege === PRIVILEGES.TEACHER ? false : true);

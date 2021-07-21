@@ -300,7 +300,7 @@ exports.viewAllResponse = async (req, res) => {
                         }
                     })
                 });
-                let percent = ((count / survey.responses.length) * 100).toFixed(0) + "%";
+                let percent = ((count / (survey.responses.length || 1)) * 100).toFixed(0) + "%";
                 return {
                     _id: answer._id,
                     content: answer.content,
@@ -323,7 +323,7 @@ exports.viewAllResponse = async (req, res) => {
                         });
                     })
                 });
-                let percent = ((count / survey.responses.length) * 100).toFixed(0) + "%";
+                let percent = ((count / (survey.responses.length || 1)) * 100).toFixed(0) + "%";
                 return {
                     _id: answer._id,
                     content: answer.content,

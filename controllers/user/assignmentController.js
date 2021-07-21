@@ -8,6 +8,19 @@ const DETAILS = require("../../constants/AccountDetail");
 const { ClientResponsesMessages } = require('../../constants/ResponseMessages');
 const { AssignResponseMessages } = ClientResponsesMessages
 
+const getSubmissionComments = async (submission) => {
+    const comments = await Promise.all(submission.feedBack.comments.map(async (comment) => {
+        const user = await getUserById(comment.idUser, DETAILS.COMMON);
+        return {
+            _id: comment._id,
+            user: user,
+            content: comment.content
+        }
+    }));
+    return comments
+}
+
+
 exports.create = async (req, res) => {
     const course = req.course;
     const timeline = findTimeline(course, req.body.idTimeline);
@@ -59,6 +72,11 @@ exports.find = async (req, res) => {
             gradeStatus = true;
             isCanSubmit = false;
         }
+
+        // if (submission && submission.feedBack) {
+        //     submission.feedBack.comments = await getSubmissionComments(submission);
+        // }
+
         res.json({
             success: true,
             assignment: {
@@ -248,10 +266,8 @@ exports.submit = async (req, res) => {
 
         await sendMail(mailOptions);
 
-        res.json({
-            success: true,
-            submission: assignment.submissions[index]
-        });
+        return this.find(req, res);
+
     } else {
         let message;
         if (today <= setting.startTime) {
@@ -310,14 +326,9 @@ exports.commentFeedback = async (req, res) => {
     })
 
     await course.save();
-    const comments = await Promise.all(submitted.feedBack.comments.map(async (comment) => {
-        const user = await getUserById(comment.idUser, DETAILS.COMMON);
-        return {
-            _id: comment._id,
-            user: user,
-            content: comment.content
-        }
-    }));
+
+    const comments = await getSubmissionComments(submitted);
+
     res.json({
         success: true,
         message: AssignResponseMessages.COMMENT_FEEDBACK_SUBMISSION_SUCCESS,

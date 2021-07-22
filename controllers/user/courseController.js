@@ -74,10 +74,10 @@ exports.getAllEnrolledCourses = async (req, res) => {
     });
 };
 
-const submitAssignment = async (course) => {
-    const timeline = course.timelines[0];
+const submitAssignment = async (course, timelineIndex, assignIndex) => {
+    const timeline = course.timelines[timelineIndex];
 
-    const assignment = timeline.assignments[0];
+    const assignment = timeline.assignments[assignIndex];
 
     const students = await User.find({
         _id: { $in: course.studentIds }
@@ -101,10 +101,10 @@ const submitAssignment = async (course) => {
 
 }
 
-const gradeAssignment = async (course, teacher) => {
-    const timeline = course.timelines[0];
+const gradeAssignment = async (course, teacher, timelineIndex, assignIndex) => {
+    const timeline = course.timelines[timelineIndex];
 
-    const assignment = timeline.assignments[0];
+    const assignment = timeline.assignments[assignIndex];
     const submissions = await Promise.all(assignment.submissions.map(async (submission) => {
 
         let grade = Math.round(Math.random() * 10) + 5;
@@ -222,8 +222,8 @@ const doSurvey = async (course) => {
 
 exports.getDetail = async (req, res) => {
     const course = req.course;
-    // await submitAssignment(course)
-    // await gradeAssignment(course, req.user);
+    //await submitAssignment(course,0,1)
+    //await gradeAssignment(course, req.user, 0, 1);
     // await doQuiz(course);
     // await doSurvey(course);
 

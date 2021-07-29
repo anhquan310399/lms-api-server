@@ -91,18 +91,24 @@ exports.getLearningResultOfSemester = async (req, res) => {
     const learningResults = await getLearningResult(semester);
 
     const data = await Promise.all(learningResults.map(async (result) => {
-        return { gpa: Number.parseFloat(result.gpa).toFixed(0) }
+        return { gpa: Number.parseFloat(result.gpa).toFixed(0), faculty: result.faculty }
     }))
 
     const statistic = _.chain(data)
-        .groupBy('gpa')
-        .map((items, key) => {
-            return { score: key, count: items.length }
+        .groupBy('faculty')
+        .map((faculties, key) => {
+            const values = _.chain(faculties).groupBy('gpa')
+                .map((items, gpa) => {
+                    return { score: gpa, count: items.length }
+                }).value();
+
+            return { key: key, values: values }
         })
         .value();
 
     res.json({
-        result: learningResults, statistic
+        result: learningResults,
+        statistic
     })
 }
 

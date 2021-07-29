@@ -743,6 +743,8 @@ exports.getSubjectTranscriptTotal = async (req, res) => {
         totalRatio += transcript.ratio;
     });
 
+    let statistic = [];
+
     let data = await Promise.all(course.studentIds.map(
         async (idStudent) => {
             const student = await getUserById(idStudent, DETAILS.COMMON)
@@ -772,16 +774,27 @@ exports.getSubjectTranscriptTotal = async (req, res) => {
             });
             let key = 'c' + count;
             data[key] = (total / totalRatio).toFixed(2);
+
+            statistic.push({ gpa: (total / totalRatio).toFixed(0) });
+
             ratios[key] = null;
             fields[key] = 'Trung bình';
             return data;
         }
     ));
 
+    statistic = _.chain(statistic)
+        .groupBy('gpa')
+        .map((items, key) => {
+            return { score: key, count: items.length };
+        })
+        .value();
+
     return res.send({
         fields: fields,
         ratio: ratios,
-        data: data
+        data: data,
+        statistic
     });
 
 }

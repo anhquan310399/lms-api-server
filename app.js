@@ -5,23 +5,39 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(express.static('public'))
+
 app.use(require('cors')());
 
-app.use("/chatroom", require("./routes/chatroom"));
-app.use("/user", require("./routes/user"));
-app.use("/privilege", require("./routes/privilege"));
-app.use("/subject", require("./routes/subject"));
-app.use("/timeline", require("./routes/timeline"));
-app.use("/announcement", require("./routes/announcement"));
-app.use("/assignment", require("./routes/assignment"));
-app.use("/forum", require("./routes/forum"));
-app.use("/topic", require("./routes/topic"));
-app.use("/quiz-bank", require("./routes/quizBank"));
-app.use("/survey-bank", require("./routes/surveyBank"));
-app.use("/exam", require("./routes/exam"));
-app.use("/survey", require("./routes/survey"));
-app.use("/zoom", require("./routes/zoom"));
-app.use("/course", require("./routes/course"));
+app.use("/chatroom", require("./routes/chatroomRoute"));
+app.use("/admin", require("./routes/admin/admin"));
+app.use("/user", require("./routes/userRoute"));
+app.use("/survey-bank", require("./routes/surveyBankRoute"));
+app.use("/course", require("./routes/course/courseRoute"));
+app.use("/timeline", require("./routes/course/timelineRoute"));
+app.use("/announcement", require("./routes/course/announceRoute"));
+app.use("/assignment", require("./routes/course/assignmentRoute"));
+app.use("/forum", require("./routes/course/forumRoute"));
+app.use("/topic", require("./routes/course/topicRoute"));
+app.use("/quiz-bank", require("./routes/course/quizBankRoute"));
+app.use("/exam", require("./routes/course/examRoute"));
+app.use("/survey", require("./routes/course/surveyRoute"));
+app.use("/curriculum", require("./routes/curriculumRoute"));
+
+const jwt = require('jsonwebtoken')
+app.get("/verify", (req, res) => {
+    try {
+        const token = req.header('Authorization').replace('Bearer ', '')
+        const data = jwt.verify(token, process.env.JWT_KEY)
+        res.json({
+            success: true
+        })
+    } catch (err) {
+        res.status(404).json({
+            success: false
+        })
+    }
+})
 
 //Setup Error Handlers
 const errorHandlers = require("./handlers/errorHandlers");

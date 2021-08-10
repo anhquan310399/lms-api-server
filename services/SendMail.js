@@ -1,7 +1,10 @@
 const nodemailer = require('nodemailer');
+const smtpTransport = require('nodemailer-smtp-transport');
 const mongoose = require("mongoose");
-const User = mongoose.model("User");
-const transporter = nodemailer.createTransport({
+const schemaTitle = require("../constants/SchemaTitle");
+const User = mongoose.model(schemaTitle.USER);
+const transporter = nodemailer.createTransport(smtpTransport({
+    service: 'gmail',
     host: 'smtp.gmail.com',
     port: 465,
     secure: true,
@@ -9,25 +12,34 @@ const transporter = nodemailer.createTransport({
         user: process.env.GM_USERNAME,
         pass: process.env.GM_PASSWORD
     }
-});
+}));
 
-const sendMail = (mailOptions) => {
-    User.findOne({ emailAddress: mailOptions.to },
+const sendMail = (mailOptions, force = false) => {
+    return new Promise((resolve, reject) => {
+        User.findOne({ emailAddress: mailOptions.to },
             'emailAddress isNotify')
-        .then(to => {
-            if (to.isNotify) {
-                transporter.sendMail(mailOptions, function(error, info) {
-                    if (error) {
-                        console.log(error);
-                    } else {
-                        console.log('Email sent: ' + info.response);
-                    }
-                });
-            }
-        })
-        .catch(error => {
-            console.log(error);
-        });
+            .then(async (to) => {
+                if (to.isNotify || force) {
+                    await transporter.sendMail(mailOptions, function (error, info) {
+                        if (error) {
+                            console.log(error);
+                            resolve({ status: false, message: error.message });
+                        } else {
+                            status = true;
+                            console.log('Email sent: ' + info.response);
+                            resolve({ status: true });
+                        }
+                    });
+                }
+                else {
+                    resolve({ status: true });
+                }
+            })
+            .catch(error => {
+                console.log(error);
+                resolve({ status: false, message: error.message });
+            })
+    })
 }
 
 module.exports = {
